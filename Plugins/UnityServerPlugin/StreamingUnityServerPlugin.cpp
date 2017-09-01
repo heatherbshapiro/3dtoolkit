@@ -52,7 +52,7 @@
 #pragma comment(lib, "protobuf_full.lib")
 
 using namespace Microsoft::WRL;
-using namespace Toolkit3DLibrary;
+using namespace StreamingToolkit;
 
 void(__stdcall*s_onInputUpdate)(const char *msg);
 void(__stdcall*s_onLog)(const int level, const char *msg);
@@ -86,19 +86,6 @@ bool s_closing = false;
 void FrameUpdate()
 {
 	ULOG(INFO, __FUNCTION__);
-}
-
-// Handles input from client.
-void InputUpdate(const std::string& message)
-{
-	ULOG(INFO, __FUNCTION__);
-
-	if (s_onInputUpdate)
-	{
-		ULOG(INFO, message.c_str());
-
-		(*s_onInputUpdate)(message.c_str());
-	}
 }
 
 
@@ -150,7 +137,22 @@ void InitWebRTC()
 
 	client.SetHeartbeatMs(heartbeat);
 
-	s_conductor = new rtc::RefCountedObject<Conductor>(&client, wnd, &FrameUpdate, &InputUpdate, g_videoHelper);
+	s_conductor = new rtc::RefCountedObject<Conductor>(&client, wnd, &FrameUpdate, g_videoHelper);
+	
+	// Handles input from client.
+	InputDataHandler inputHandler([&](const std::string& message)
+	{
+		ULOG(INFO, __FUNCTION__);
+
+		if (s_onInputUpdate)
+		{
+			ULOG(INFO, message.c_str());
+
+			(*s_onInputUpdate)(message.c_str());
+		}
+	});
+
+	s_conductor->SetInputDataHandler(&inputHandler);
 
 	if (s_conductor != nullptr)
 	{
