@@ -26,9 +26,12 @@ namespace Xamarin_Android.Droid
             EditText text = FindViewById<EditText>(Resource.Id.URLText);
             text.SetText("I love my job", TextView.BufferType.Editable);
 			
-			//button.Click += delegate {
-			//	button.Text = string.Format ("{0} clicks!", count++);
-			//};
+			button.Click += delegate {
+                Intent intent = new Intent(this, typeof(RenderSceneActivity));
+                StartActivity(intent);
+
+
+            };
 		}
 	}
 }
