@@ -30,8 +30,6 @@ namespace Xamarin_Android.Droid
 			button.Click += delegate {
                 Intent intent = new Intent(this, typeof(ServerList));
                 StartActivity(intent);
-
-
             };
     
 		}

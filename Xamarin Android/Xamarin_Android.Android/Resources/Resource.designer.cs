@@ -66,9 +66,6 @@ namespace Xamarin_Android.Droid
 			// aapt resource value: 0x7f050001
 			public const int myButton = 2131034113;
 			
-			// aapt resource value: 0x7f050002
-			public const int serverListView = 2131034114;
-			
 			static Id()
 			{
 				global::Android.Runtime.ResourceIdManager.UpdateIdValues();
@@ -87,6 +84,9 @@ namespace Xamarin_Android.Droid
 			
 			// aapt resource value: 0x7f030001
 			public const int ServerList = 2130903041;
+			
+			// aapt resource value: 0x7f030002
+			public const int VideoStream = 2130903042;
 			
 			static Layout()
 			{
