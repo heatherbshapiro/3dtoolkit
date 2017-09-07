@@ -19,7 +19,7 @@ namespace Xamarin_Android.Droid
     {
         public const string url = "http://3dtoolkit-signaling-server.azurewebsites.net";
         public const string port = ":80";
-        public void GetServerList()
+        public string GetServerList()
         {
             //Creates an HTTP request using the required URL
             var req = new HttpWebRequest(new Uri (url + "/sign_in?peer_name=" + port));
@@ -38,11 +38,12 @@ namespace Xamarin_Android.Droid
                     if (string.IsNullOrWhiteSpace(content))
                     {
                         Console.Out.WriteLine("Response contained empty body...");
-
+                        return null;
                     }
                     else
                     {
                         Console.WriteLine("Response Body: \r\n {0}", content);
+                        return content;
                     }
 
 

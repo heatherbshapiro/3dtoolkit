@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,6 +19,9 @@ namespace Xamarin_Android.Droid
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate (savedInstanceState);
+            string ServerList = Intent.GetStringExtra("server_list");
+            string[] server = ServerList.Split();
+            List<string> servers = server.ToList();
 
             ListAdapter = new ArrayAdapter<string>(this, Resource.Layout.ServerList, servers);
 
@@ -32,9 +36,9 @@ namespace Xamarin_Android.Droid
             };
         }
 
-        static readonly string[] servers = new String[] {
-            "server1", "server2", "server3", "server4"
-         };
+        //static readonly string[] servers = new String[] {
+        //    "server1", "server2", "server3", "server4"
+        // };
 
     }
 }

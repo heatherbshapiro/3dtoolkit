@@ -2,4 +2,5 @@
 <resources>
 	<string name="connect">Connect</string>
 	<string name="app_name">Xamarin_Android.Android</string>
+  <string name="url">http://3dtoolkit-signaling-server.azurewebsites.net</string>
 </resources>

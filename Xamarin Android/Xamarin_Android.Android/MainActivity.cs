@@ -8,6 +8,7 @@ using Android.Widget;
 using Android.OS;
 using System
     .Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Xamarin_Android.Droid
 {
@@ -26,16 +27,16 @@ namespace Xamarin_Android.Droid
 			Button button = FindViewById<Button> (Resource.Id.myButton);
 
             EditText text = FindViewById<EditText>(Resource.Id.URLText);
-            text.SetText("URL text goes here", TextView.BufferType.Editable);
 			
 			button.Click += delegate {
                 Connect connect = new Connect();
-                connect.GetServerList();
+                string content = connect.GetServerList();
 
-                //Intent intent = new Intent(this, typeof(ServerList));
-                //StartActivity(intent);
+                Intent intent = new Intent(this, typeof(ServerList));
+                intent.PutExtra("server_list", content);
+                StartActivity(intent);
 
-
+            
             };
     
 		}
