@@ -6,6 +6,7 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using Android.OS;
+using System.Threading.Tasks;
 
 namespace Xamarin_Android.Droid
 {
@@ -24,16 +25,18 @@ namespace Xamarin_Android.Droid
 			Button button = FindViewById<Button> (Resource.Id.myButton);
 
             EditText text = FindViewById<EditText>(Resource.Id.URLText);
-            text.SetText("I love my job", TextView.BufferType.Editable);
+            text.SetText("URL text goes here", TextView.BufferType.Editable);
 			
 			button.Click += delegate {
-                Intent intent = new Intent(this, typeof(RenderSceneActivity));
+                Intent intent = new Intent(this, typeof(ServerList));
                 StartActivity(intent);
 
 
             };
+    
 		}
-	}
+    
+    }
 }
 
 
