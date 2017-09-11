@@ -90,11 +90,11 @@
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup>
-      <ClCompile>
-    <AdditionalIncludeDirectories>$(ProjectDir)..\..\Libraries\UnityPluginAPI\inc;$(ProjectDir)..\NativeServerPlugin\inc;$(ProjectDir)..\..\Libraries\WebRTC\headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>    
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\Libraries\UnityPluginAPI\inc;$(ProjectDir)..\NativeServerPlugin\inc;$(ProjectDir)..\..\Libraries\WebRTC\headers;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\Libraries\WebRTC\$(Platform)\$(Configuration)\lib</AdditionalLibraryDirectories>     
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\Libraries\WebRTC\$(Platform)\$(Configuration)\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -106,6 +106,7 @@
       <PreprocessorDefinitions>NOMINMAX;WIN32_LEAN_AND_MEAN;NOMINMAX;WIN32_LEAN_AND_MEAN;WIN32;_DEBUG;_WINDOWS;_USRDLL;ARFUNITYMRT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4100</DisableSpecificWarnings>
+      <BrowseInformation>true</BrowseInformation>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -132,6 +133,9 @@
       ENDLOCAL
       </Command>
     </PostBuildEvent>
+    <Bscmake>
+      <PreserveSbr>true</PreserveSbr>
+    </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -166,7 +170,7 @@
       xcopy /y /d  "$(ProjectDir)..\..\Libraries\WebRTC\$(Platform)\$(Configuration)\dll\boringssl.dll" "%TARGET_PLUGIN_PATH%Plugins\$(PlatformShortName)\StreamingServer" 
       xcopy /y /d  "$(ProjectDir)..\..\Libraries\WebRTC\$(Platform)\$(Configuration)\dll\ffmpeg.dll" "%TARGET_PLUGIN_PATH%Plugins\$(PlatformShortName)\StreamingServer"
       ENDLOCAL
-      </Command>   
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

@@ -32,6 +32,7 @@ namespace Xamarin_Android.Droid
                 //Toast.MakeText(Application, ((TextView)args.View).Text, ToastLength.Short).Show();
                 // Here is where we move to video screening
                 Intent intent = new Intent(this, typeof(VideoStream));
+                intent.PutExtra("video_stream", sender.ToString());
                 StartActivity(intent);
             };
         }
