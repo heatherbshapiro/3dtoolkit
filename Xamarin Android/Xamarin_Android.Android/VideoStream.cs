@@ -174,11 +174,8 @@ namespace Xamarin_Android.Droid
         {
             throw new NotImplementedException();
         }
-        public static IVideoCapturer create(string device_name)
-        {
-            return;
-        }
-        private object getVideoCapturer()
+       
+        public object getVideoCapturer()
         {
             string[] cameraFacing = { "front", "back" };
             int[] cameraIndex = { 0, 1 };
@@ -191,7 +188,7 @@ namespace Xamarin_Android.Droid
                     {
                         string name = "Camera " + index + ", Facing " + facing +
                             ", Orientation " + orientation;
-                        IVideoCapturer capturer = IVideoCapturer.create(name);
+                        IVideoCapturer capturer = create(name);
                         if (capturer != null)
                         {
                             Console.Write("Using camera: " + name);
@@ -201,6 +198,10 @@ namespace Xamarin_Android.Droid
                 }
             }
             throw new RuntimeException("Failed to open capturer");
+        }
+        public IVideoCapturer create(string device_name)
+        {
+            return null;
         }
     }
 }
