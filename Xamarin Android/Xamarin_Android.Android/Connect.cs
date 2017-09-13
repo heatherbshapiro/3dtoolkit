@@ -18,12 +18,13 @@ namespace Xamarin_Android.Droid
     class Connect
     {
         public const string url = "http://3dtoolkit-signaling-server.azurewebsites.net";
+        //public const string url = "http://127.0.0.1:3000";
         public const string port = ":80";
         public string GetServerList()
         {
             //Creates an HTTP request using the required URL
             var req = new HttpWebRequest(new Uri (url + "/sign_in?peer_name=" + port));
-            req.ContentType = "text/html";
+            req.ContentType = "application/json";
             req.Method = "GET";
 
             using (HttpWebResponse response = req.GetResponse() as HttpWebResponse)
