@@ -13,23 +13,44 @@ using Org.Webrtc;
 using Org.Json;
 using Newtonsoft.Json.Linq;
 using Java.Lang;
+using Android.Media.Projection;
+using Android.Graphics;
 
 namespace Xamarin_Android.Droid
 {
     [Activity(Label = "VideoStream")]
     public class VideoStream : Activity, PeerConnection.IObserver, ISdpObserver, IVideoCapturer
     {
-        public ISdpObserver sdp;
+      
+        public ISdpObserver sdp { get; set; }
 
-        public PeerConnection.IObserver observer;
+        public PeerConnection.IObserver observer { get; set; }
+
+        public IVideoCapturer videoCapturer { get; set; }
+        private IVideoCapturerCapturerObserver capturerObserver { get; set; }
+        private SurfaceTextureHelper surfaceTextureHelper { get; set; }
        
-        public IVideoCapturer videoCapturer;
+        private int width;
+        private int height;
+        private MediaProjection mediaProjection;
+        private bool isDisposed = false;
+        private MediaProjectionManager mediaProjectionManager;
+        private Intent mediaProjectionPermissionResultData;
+        private MediaProjection.Callback mediaProjectionCallback;
 
+
+        private void checkNotDisposed()
+        {
+            if (isDisposed)
+            {
+                throw new RuntimeException("capturer is disposed.");
+            }
+        }
         public bool IsScreencast
         {
             get
             {
-                throw new NotImplementedException();
+                return true;
             }
         }
 
@@ -57,7 +78,9 @@ namespace Xamarin_Android.Droid
             sdpConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
             AudioSource audioSource = pcFactory.CreateAudioSource(audioConstraints);
             AudioTrack localAudioTrack = pcFactory.CreateAudioTrack("sad", audioSource);
-            
+            surfaceTextureHelper = SurfaceTextureHelper.Create("current", new EglBaseContext());            
+            videoCapturer.Initialize(surfaceTextureHelper,this, capturerObserver);
+
             VideoSource videoSource = pcFactory.CreateVideoSource(videoCapturer);
             VideoTrack localVideoTrack = pcFactory.CreateVideoTrack("vidtrack", videoSource);
             
@@ -160,22 +183,48 @@ namespace Xamarin_Android.Droid
             throw new NotImplementedException();
         }
 
-        public void Initialize(SurfaceTextureHelper p0, Context p1, IVideoCapturerCapturerObserver p2)
+        public void Initialize(SurfaceTextureHelper surfaceTextureHelper, Context applicationContext, IVideoCapturerCapturerObserver capturerObserver)
         {
-            throw new NotImplementedException();
+            if (capturerObserver == null)
+            {
+                throw new RuntimeException("capturerObserver not set.");
+            }
+            this.capturerObserver = capturerObserver;
+            if (surfaceTextureHelper == null)
+            {
+                throw new RuntimeException("surfaceTextureHelper not set.");
+            }
+            this.surfaceTextureHelper = surfaceTextureHelper;
+            mediaProjectionManager = (MediaProjectionManager)applicationContext.GetSystemService(
+                Context.MediaProjectionService);
         }
 
-        public void StartCapture(int p0, int p1, int p2)
+        public void StartCapture(int width, int height, int ignoredFramerate)
         {
-            throw new NotImplementedException();
-        }
 
+            this.width = width;
+            this.height = height;
+            mediaProjection = mediaProjectionManager.GetMediaProjection(
+                1, mediaProjectionPermissionResultData);
+            //// Let MediaProjection callback use the SurfaceTextureHelper thread.
+            //mediaProjection.RegisterCallback(mediaProjectionCallback, surfaceTextureHelper.getHandler());
+            //createVirtualDisplay();
+            //capturerObserver.OnCapturerStarted(true);
+            //surfaceTextureHelper.StartListening();
+        }
+        private void createVirtualDisplay()
+        {
+            //surfaceTextureHelper.getSurfaceTexture().setDefaultBufferSize(width, height);
+            //virtualDisplay = mediaProjection.createVirtualDisplay("WebRTC_ScreenCapture", width, height,
+            //    VIRTUAL_DISPLAY_DPI, DISPLAY_FLAGS, new Surface(surfaceTextureHelper.getSurfaceTexture()),
+            //    null /* callback */, null /* callback handler */);
+        }
         public void StopCapture()
         {
             throw new NotImplementedException();
         }
        
-        public object getVideoCapturer()
+        private IVideoCapturer getVideoCapturer()
         {
             string[] cameraFacing = { "front", "back" };
             int[] cameraIndex = { 0, 1 };
@@ -202,6 +251,7 @@ namespace Xamarin_Android.Droid
         public IVideoCapturer create(string device_name)
         {
             return null;
+            
         }
     }
 }
