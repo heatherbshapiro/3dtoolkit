@@ -13,23 +13,38 @@ using Org.Webrtc;
 using Org.Json;
 using Newtonsoft.Json.Linq;
 using Java.Lang;
-//using Foundation;
-//using AVFoundation; 
 using Android.Graphics;
 using Android.Hardware.Display;
-
+using Android.Media.Projection;
+using Android.Graphics;
 
 namespace Xamarin_Android.Droid
 {
     [Activity(Label = "VideoStream")]
-    public class VideoStream : Activity, PeerConnection.IObserver, ISdpObserver, IVideoCapturer
+    public class VideoStream : Activity, PeerConnection.IObserver, ISdpObserver// //IVideoCapturer
     {
 
         public ISdpObserver sdp;
 
-        public PeerConnection.IObserver observer;
+        public PeerConnection.IObserver observer { get; set; }
+
+        public IVideoCapturer videoCapturer { get; set; }
+
+        /* HEATHER: public ISdpObserver sdp { get; set; }
+
+        
+        private IVideoCapturerCapturerObserver capturerObserver { get; set; }
+        private SurfaceTextureHelper surfaceTextureHelper { get; set; }
        
-        public IVideoCapturer videoCapturer;
+        private int width;
+        private int height;
+        private MediaProjection mediaProjection;
+        private bool isDisposed = false;
+        private MediaProjectionManager mediaProjectionManager;
+        private Intent mediaProjectionPermissionResultData;
+        private MediaProjection.Callback mediaProjectionCallback;
+        
+        */
 
         private VideoRenderer.ICallbacks remoteRender;
         private VideoRenderer.ICallbacks localRender;
@@ -39,13 +54,23 @@ namespace Xamarin_Android.Droid
 
         private EglBase rootEglBase;
 
+        /* HEATHER 
+        
+        private void checkNotDisposed()
+        {
+            if (isDisposed)
+            {
+                throw new RuntimeException("capturer is disposed.");
+            }
+        }
+
         public bool IsScreencast
         {
             get
             {
-                throw new NotImplementedException();
+                return true;
             }
-        }
+        }*/
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -81,10 +106,13 @@ namespace Xamarin_Android.Droid
             AudioSource audioSource = pcFactory.CreateAudioSource(audioConstraints);
             AudioTrack localAudioTrack = pcFactory.CreateAudioTrack("sad", audioSource);
 
-
             //CREATE LOCAL VIDEO TRACK
 
             videoCapturer = createVideoCapturer();
+
+            // HEATHER surfaceTextureHelper = SurfaceTextureHelper.Create("current", new EglBaseContext());            
+            // HEATHER videoCapturer.Initialize(surfaceTextureHelper,this, capturerObserver);
+
             VideoSource videoSource = pcFactory.CreateVideoSource(videoCapturer);
             //change these constants
             videoCapturer.StartCapture(100, 100, 30);
@@ -97,7 +125,7 @@ namespace Xamarin_Android.Droid
             mediaStream.AddTrack(localAudioTrack);
             mediaStream.AddTrack(localVideoTrack);
             
-            PeerConnection peerConnection = pcFactory.CreatePeerConnection(servers, sdpConstraints,observer);
+            PeerConnection peerConnection = pcFactory.CreatePeerConnection(servers, sdpConstraints, observer);
             peerConnection.InvokeSignalingState();
             peerConnection.AddStream(mediaStream);
 
@@ -194,52 +222,81 @@ namespace Xamarin_Android.Droid
             throw new NotImplementedException();
         }
 
-        public void Initialize(SurfaceTextureHelper p0, Context p1, IVideoCapturerCapturerObserver p2)
+        /* public void Initialize(SurfaceTextureHelper surfaceTextureHelper, Context applicationContext, IVideoCapturerCapturerObserver capturerObserver)
         {
-            throw new NotImplementedException();
+            if (capturerObserver == null)
+            {
+                throw new RuntimeException("capturerObserver not set.");
+            }
+            this.capturerObserver = capturerObserver;
+            if (surfaceTextureHelper == null)
+            {
+                throw new RuntimeException("surfaceTextureHelper not set.");
+            }
+            this.surfaceTextureHelper = surfaceTextureHelper;
+            mediaProjectionManager = (MediaProjectionManager)applicationContext.GetSystemService(
+                Context.MediaProjectionService);
         }
 
-        public void StartCapture(int p0, int p1, int p2)
+        public void StartCapture(int width, int height, int ignoredFramerate)
         {
-            throw new NotImplementedException();
-        }
 
+            this.width = width;
+            this.height = height;
+            mediaProjection = mediaProjectionManager.GetMediaProjection(
+                1, mediaProjectionPermissionResultData);
+            //// Let MediaProjection callback use the SurfaceTextureHelper thread.
+            //mediaProjection.RegisterCallback(mediaProjectionCallback, surfaceTextureHelper.getHandler());
+            //createVirtualDisplay();
+            //capturerObserver.OnCapturerStarted(true);
+            //surfaceTextureHelper.StartListening();
+        }
+        private void createVirtualDisplay()
+        {
+            //surfaceTextureHelper.getSurfaceTexture().setDefaultBufferSize(width, height);
+            //virtualDisplay = mediaProjection.createVirtualDisplay("WebRTC_ScreenCapture", width, height,
+            //    VIRTUAL_DISPLAY_DPI, DISPLAY_FLAGS, new Surface(surfaceTextureHelper.getSurfaceTexture()),
+            //    null, null callback handler);
+        }
         public void StopCapture()
         {
             throw new NotImplementedException();
         }
+        */
 
-        //public IVideoCapturer getVideoCapturer()
-        //{
-            
-            //string[] cameraFacing = { "front", "back" };
-            //int[] cameraIndex = { 0, 1 };
-            //int[] cameraOrientation = { 0, 90, 180, 270 };
-            //foreach (string facing in cameraFacing)
-            //{
-            //    foreach (int index in cameraIndex)
-            //    {
-            //        foreach (int orientation in cameraOrientation)
-            //        {
-            //            string name = "Camera " + index + ", Facing " + facing +
-            //                ", Orientation " + orientation;
-            //            System.Diagnostics.Debug.Print(name);
-            //            IVideoCapturer capturer = Create(name);
-                        
-            //            if (capturer != null)
-            //            {
-                            //Console.Write("Using camera: " + name);
-                            //return capturer;
-            //            }
-            //        }
-            //    }
-            //}
-            //throw new RuntimeException("Failed to open capturer");
+        /* public IVideoCapturer getVideoCapturer()
+        {
+
+            string[] cameraFacing = { "front", "back" };
+            int[] cameraIndex = { 0, 1 };
+            int[] cameraOrientation = { 0, 90, 180, 270 };
+            foreach (string facing in cameraFacing)
+            {
+                foreach (int index in cameraIndex)
+                {
+                    foreach (int orientation in cameraOrientation)
+                    {
+                        string name = "Camera " + index + ", Facing " + facing +
+                            ", Orientation " + orientation;
+                        System.Diagnostics.Debug.Print(name);
+                        IVideoCapturer capturer = Create(name);
+
+                        if (capturer != null)
+                        {
+                            Console.Write("Using camera: " + name);
+                            return capturer;
+                        }
+                    }
+                }
+            }
+            throw new RuntimeException("Failed to open capturer");
 
 
-        //}
+            } */
 
         private IVideoCapturer createVideoCapturer()
+       
+        //private IVideoCapturer getVideoCapturer()
         {
             IVideoCapturer videoCapturer;
             if (useCamera2())
