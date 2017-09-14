@@ -37,9 +37,5 @@ namespace Xamarin_Android.Droid
             };
         }
 
-        //static readonly string[] servers = new String[] {
-        //    "server1", "server2", "server3", "server4"
-        // };
-
     }
 }

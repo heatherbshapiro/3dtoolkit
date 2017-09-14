@@ -10,7 +10,6 @@ using Android.Runtime;
 using Android.Views;
 using Android.Widget;
 using Org.Webrtc;
-//using Org.Webrtc.VideoRendererGui;;
 using Org.Json;
 using Newtonsoft.Json.Linq;
 using Java.Lang;
