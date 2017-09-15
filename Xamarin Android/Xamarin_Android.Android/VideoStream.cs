@@ -77,6 +77,7 @@ namespace Xamarin_Android.Droid
             SetContentView(Resource.Layout.VideoStream);
             remoteRenderView = FindViewById<Org.Webrtc.SurfaceViewRenderer> (Resource.Id.remote_video_view);
             localRenderView = FindViewById<Org.Webrtc.SurfaceViewRenderer>(Resource.Id.local_video_view);
+            localRenderView.Init(EglBase.Create().EglBaseContext, null);
 
             localRenderView.SetZOrderMediaOverlay(true);
             localRenderView.SetEnableHardwareScaler(true);
@@ -87,7 +88,6 @@ namespace Xamarin_Android.Droid
 
             PeerConnection.IceServer ice = new PeerConnection.IceServer("turnserver3dstreaming.centralus.cloudapp.azure.com:5349", "user", "3Dtoolkit072017");
             IList<PeerConnection.IceServer> servers = new List<PeerConnection.IceServer>();
-            //q: shouldn't we also have a stun server? 
             servers.Add(ice);
 
             /* Handles the creating of audio and video streams. */
@@ -105,7 +105,8 @@ namespace Xamarin_Android.Droid
             VideoSource videoSource = pcFactory.CreateVideoSource(videoCapturer);
             videoCapturer.StartCapture(100, 100, 30); //change these constants
             VideoTrack localVideoTrack = pcFactory.CreateVideoTrack("vidtrack", videoSource);
-            // localVideoTrack.AddRenderer(new VideoRenderer(localRender));
+            //localRenderView.RenderFrame(localVideoTrack.AddRenderer(new VideoRenderer(localRender));
+
 
             AudioSource audioSource = pcFactory.CreateAudioSource(audioConstraints);
             AudioTrack localAudioTrack = pcFactory.CreateAudioTrack("sad", audioSource);
