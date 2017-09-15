@@ -16,19 +16,18 @@ using Java.Lang;
 using Android.Graphics;
 using Android.Hardware.Display;
 using Android.Media.Projection;
+using static Org.Webrtc.DataChannel;
 
 namespace Xamarin_Android.Droid
 {
     [Activity(Label = "VideoStream")]
     public class VideoStream : Activity, PeerConnection.IObserver, ISdpObserver, IVideoCapturer
     {
-
         // Observes SDP-related events
-        public ISdpObserver sdpObserver { get; set; }
-        public PeerConnection peerConnection { get; set; }
+        //public PeerConnection peerConnection { get; set; }
 
-        public PeerConnection.IObserver observer { get; set; }
-      
+        //public PeerConnection.IObserver observer { get; set; }
+
         //public IVideoCapturer videoCapturer { get; set; }
 
         private VideoRenderer.ICallbacks remoteRender;
@@ -73,31 +72,35 @@ namespace Xamarin_Android.Droid
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            
+            PeerConnection.IObserver observer = new VideoStream();
+            ISdpObserver sdpObserver = new VideoStream();
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.VideoStream);
-            remoteRenderView = FindViewById<Org.Webrtc.SurfaceViewRenderer> (Resource.Id.remote_video_view);
+            //remoteRenderView = FindViewById<Org.Webrtc.SurfaceViewRenderer>(Resource.Id.remote_video_view);
             localRenderView = FindViewById<Org.Webrtc.SurfaceViewRenderer>(Resource.Id.local_video_view);
 
-            localRenderView.SetZOrderMediaOverlay(true);
-            localRenderView.SetEnableHardwareScaler(true);
-            remoteRenderView.SetEnableHardwareScaler(true);
+            //localRenderView.SetZOrderMediaOverlay(true);
+            //localRenderView.SetEnableHardwareScaler(true);
+            //remoteRenderView.SetEnableHardwareScaler(true);
+            localRenderView.SetMinimumHeight(680);
+            localRenderView.SetMinimumWidth(1024);
             updateVideoView();
 
             //string vstream = Intent.GetStringExtra("video_stream");
 
             PeerConnection.IceServer ice = new PeerConnection.IceServer("turnserver3dstreaming.centralus.cloudapp.azure.com:5349", "user", "3Dtoolkit072017");
+            PeerConnection.IceTransportsType type = PeerConnection.IceTransportsType.Relay;
             List<PeerConnection.IceServer> servers = new List<PeerConnection.IceServer>();
             //q: shouldn't we also have a stun server? 
             servers.Add(ice);
-            PeerConnection.SignalingState signaling = PeerConnection.SignalingState.HaveRemoteOffer;
+
             /* Handles the creating of audio and video streams. */
-            
-            PeerConnectionFactory.InitializeAndroidGlobals(this, true, false, false);
-            
+            PeerConnectionFactory.InitializeAndroidGlobals(this, true, true, true);
+
+
             PeerConnectionFactory pcFactory = new PeerConnectionFactory();
 
-            
+
             /* Set initial audio and video constraints */
             MediaConstraints audioConstraints = new MediaConstraints();
             MediaConstraints sdpConstraints = new MediaConstraints();
@@ -105,10 +108,10 @@ namespace Xamarin_Android.Droid
             sdpConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
 
             /* Create the local VideoCapturer (for now) and tracks, of front facing camera and audio.*/
-            //IVideoCapturer videoCapturer = createVideoCapturer();
-            //VideoSource videoSource = pcFactory.CreateVideoSource(videoCapturer);
+            IVideoCapturer videoCapturer = createVideoCapturer();
+            VideoSource videoSource = pcFactory.CreateVideoSource(videoCapturer);
             //videoCapturer.StartCapture(100, 100, 30); //change these constants
-            //VideoTrack localVideoTrack = pcFactory.CreateVideoTrack("vidtrack", videoSource);
+            VideoTrack localVideoTrack = pcFactory.CreateVideoTrack("vidtrack", videoSource);
             //localVideoTrack.AddRenderer(new VideoRenderer(localRender));
 
             AudioSource audioSource = pcFactory.CreateAudioSource(audioConstraints);
@@ -117,15 +120,11 @@ namespace Xamarin_Android.Droid
             /* Add local stracks to the Media Stream. This is how local audio/video displays on your phone*/
             MediaStream mediaStream = pcFactory.CreateLocalMediaStream("heather");
             mediaStream.AddTrack(localAudioTrack);
-            //mediaStream.AddTrack(localVideoTrack);
-
-            signaling.Wait();
-            observer.OnSignalingChange(signaling);  
-            peerConnection = pcFactory.CreatePeerConnection(servers, sdpConstraints, observer);
-            peerConnection.InvokeSignalingState();
+            mediaStream.AddTrack(localVideoTrack);
+                                           
+            PeerConnection peerConnection = pcFactory.CreatePeerConnection(servers, sdpConstraints, observer);
             peerConnection.AddStream(mediaStream);
-
-            
+                        
             peerConnection.CreateOffer(sdpObserver, sdpConstraints);
             peerConnection.CreateAnswer(sdpObserver, audioConstraints);
 
@@ -306,11 +305,11 @@ namespace Xamarin_Android.Droid
 
         private void updateVideoView()
         {
-            FrameLayout remoteVideoLayout = FindViewById<FrameLayout>(Resource.Id.remote_video_layout);
+            //FrameLayout remoteVideoLayout = FindViewById<FrameLayout>(Resource.Id.remote_video_layout);
             FrameLayout localVideoLayout = FindViewById<FrameLayout>(Resource.Id.local_video_layout);
             //remoteVideoLayout.setPosition(REMOTE_X, REMOTE_Y, REMOTE_WIDTH, REMOTE_HEIGHT);
             //remoteRenderView.SetScalingType(SCALE_ASPECT_FILL);
-            remoteRenderView.SetMirror(false);
+            //remoteRenderView.SetMirror(false);
 
             /*if (iceConnected)
             {
@@ -327,7 +326,7 @@ namespace Xamarin_Android.Droid
 
             localRenderView.SetMirror(true);
             localRenderView.RequestLayout();
-            remoteRenderView.RequestLayout();
+            //remoteRenderView.RequestLayout();
         }
 
         public void Initialize(SurfaceTextureHelper surfaceTextureHelper, Context applicationContext, IVideoCapturerCapturerObserver capturerObserver)
