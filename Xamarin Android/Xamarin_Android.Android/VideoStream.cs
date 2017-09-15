@@ -24,10 +24,11 @@ namespace Xamarin_Android.Droid
     {
 
         // Observes SDP-related events
-        public ISdpObserver sdpObserver;
+        public ISdpObserver sdpObserver { get; set; }
+        public PeerConnection peerConnection { get; set; }
 
         public PeerConnection.IObserver observer { get; set; }
-
+      
         //public IVideoCapturer videoCapturer { get; set; }
 
         private VideoRenderer.ICallbacks remoteRender;
@@ -35,7 +36,7 @@ namespace Xamarin_Android.Droid
         Org.Webrtc.SurfaceViewRenderer remoteRenderView;
         Org.Webrtc.SurfaceViewRenderer localRenderView;
         private VideoTrack remoteVideoTrack;
-        private EglBase rootEglBase;
+        //private EglBase rootEglBase;
 
 
         //HEATHER: public ISdpObserver sdp { get; set; }
@@ -50,7 +51,7 @@ namespace Xamarin_Android.Droid
         private MediaProjectionManager mediaProjectionManager;
         private Intent mediaProjectionPermissionResultData;
         private MediaProjection.Callback mediaProjectionCallback;
-        
+        private SurfaceViewRenderer localView;
 
         private void checkNotDisposed()
         {
@@ -72,7 +73,7 @@ namespace Xamarin_Android.Droid
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-
+            
             // Set our view from the "main" layout resource
             SetContentView(Resource.Layout.VideoStream);
             remoteRenderView = FindViewById<Org.Webrtc.SurfaceViewRenderer> (Resource.Id.remote_video_view);
@@ -84,16 +85,20 @@ namespace Xamarin_Android.Droid
             remoteRenderView.SetEnableHardwareScaler(true);
             updateVideoView();
 
-            string vstream = Intent.GetStringExtra("video_stream");
+            //string vstream = Intent.GetStringExtra("video_stream");
 
             PeerConnection.IceServer ice = new PeerConnection.IceServer("turnserver3dstreaming.centralus.cloudapp.azure.com:5349", "user", "3Dtoolkit072017");
-            IList<PeerConnection.IceServer> servers = new List<PeerConnection.IceServer>();
-            servers.Add(ice);
 
+            List<PeerConnection.IceServer> servers = new List<PeerConnection.IceServer>();
+            servers.Add(ice);
+            PeerConnection.SignalingState signaling = PeerConnection.SignalingState.HaveRemoteOffer;
             /* Handles the creating of audio and video streams. */
+            
             PeerConnectionFactory.InitializeAndroidGlobals(this, true, false, false);
+            
             PeerConnectionFactory pcFactory = new PeerConnectionFactory();
 
+            
             /* Set initial audio and video constraints */
             MediaConstraints audioConstraints = new MediaConstraints();
             MediaConstraints sdpConstraints = new MediaConstraints();
@@ -101,12 +106,12 @@ namespace Xamarin_Android.Droid
             sdpConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
 
             /* Create the local VideoCapturer (for now) and tracks, of front facing camera and audio.*/
-            IVideoCapturer videoCapturer = createVideoCapturer();
-            VideoSource videoSource = pcFactory.CreateVideoSource(videoCapturer);
-            videoCapturer.StartCapture(100, 100, 30); //change these constants
-            VideoTrack localVideoTrack = pcFactory.CreateVideoTrack("vidtrack", videoSource);
-            //localRenderView.RenderFrame(localVideoTrack.AddRenderer(new VideoRenderer(localRender));
 
+            //IVideoCapturer videoCapturer = createVideoCapturer();
+            //VideoSource videoSource = pcFactory.CreateVideoSource(videoCapturer);
+            //videoCapturer.StartCapture(100, 100, 30); //change these constants
+            //VideoTrack localVideoTrack = pcFactory.CreateVideoTrack("vidtrack", videoSource);
+            //localRenderView.RenderFrame(localVideoTrack.AddRenderer(new VideoRenderer(localRender));
 
             AudioSource audioSource = pcFactory.CreateAudioSource(audioConstraints);
             AudioTrack localAudioTrack = pcFactory.CreateAudioTrack("sad", audioSource);
@@ -114,9 +119,11 @@ namespace Xamarin_Android.Droid
             /* Add local stracks to the Media Stream. This is how local audio/video displays on your phone*/
             MediaStream mediaStream = pcFactory.CreateLocalMediaStream("heather");
             mediaStream.AddTrack(localAudioTrack);
-            mediaStream.AddTrack(localVideoTrack);
-            
-            PeerConnection peerConnection = pcFactory.CreatePeerConnection(servers, sdpConstraints, observer);
+            //mediaStream.AddTrack(localVideoTrack);
+
+            signaling.Wait();
+            observer.OnSignalingChange(signaling);  
+            peerConnection = pcFactory.CreatePeerConnection(servers, sdpConstraints, observer);
             peerConnection.InvokeSignalingState();
             peerConnection.AddStream(mediaStream);
 
@@ -134,9 +141,16 @@ namespace Xamarin_Android.Droid
             //videoView.Start();
         }
 
-        public void OnAddStream(MediaStream p0)
+        public void OnAddStream(MediaStream mediaStream)
         {
-            throw new NotImplementedException();
+            Console.WriteLine("ADDED STREAM");
+            if (mediaStream.VideoTracks.Size() == 0)
+            {
+                Console.WriteLine("onAddStream", "NO REMOTE STREAM");
+
+            }
+            //mediaStream.videoTracks.get(0).addRenderer(new VideoRenderer(remoteRender));
+
         }
 
         public void OnAddTrack(RtpReceiver p0, MediaStream[] p1)
@@ -149,14 +163,29 @@ namespace Xamarin_Android.Droid
             throw new NotImplementedException();
         }
 
-        public void OnIceCandidate(IceCandidate p0)
+        public void OnIceCandidate(IceCandidate candidate)
+        {
+            Console.WriteLine("FOUND AN ICE CANDIDATE");
+            if(candidate != null)
+            {
+                JSONObject payload = new JSONObject();
+                payload.Put("sdpMLineIndex", candidate.SdpMLineIndex);
+                payload.Put("sdpMid", candidate.SdpMid);
+                payload.Put("candidate", candidate.Sdp);
+                JSONObject candidateObject = new JSONObject();
+                candidateObject.Put("ice", candidate.ToString());
+                sendText(candidateObject.ToString());
+            }
+        }
+
+        private void sendText(string v)
         {
             throw new NotImplementedException();
         }
 
         public void OnIceCandidatesRemoved(IceCandidate[] p0)
         {
-            throw new NotImplementedException();
+            Console.WriteLine("REMOVED ICE CANDIDATE");
         }
 
         public void OnIceConnectionChange(PeerConnection.IceConnectionState p0)
@@ -171,7 +200,7 @@ namespace Xamarin_Android.Droid
 
         public void OnIceGatheringChange(PeerConnection.IceGatheringState p0)
         {
-            throw new NotImplementedException();
+            Console.WriteLine("Ice GATHERING CHANGED");
         }
 
         public void OnRemoveStream(MediaStream p0)
@@ -184,9 +213,9 @@ namespace Xamarin_Android.Droid
             throw new NotImplementedException();
         }
 
-        public void OnSignalingChange(PeerConnection.SignalingState p0)
+        public void OnSignalingChange(PeerConnection.SignalingState signalingState)
         {
-            throw new NotImplementedException();
+            Console.WriteLine("SIGNAL CHANGED");
         }
 
         public void OnCreateFailure(string p0)
@@ -341,6 +370,6 @@ namespace Xamarin_Android.Droid
         {
             throw new NotImplementedException();
         }
-
+        
     }
 }
