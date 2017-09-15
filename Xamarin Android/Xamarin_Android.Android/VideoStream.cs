@@ -20,7 +20,7 @@ using Android.Media.Projection;
 namespace Xamarin_Android.Droid
 {
     [Activity(Label = "VideoStream")]
-    public class VideoStream : Activity, PeerConnection.IObserver, ISdpObserver //HEATHER: IVideoCapturer
+    public class VideoStream : Activity, PeerConnection.IObserver, ISdpObserver, IVideoCapturer
     {
 
         // Observes SDP-related events
@@ -38,8 +38,8 @@ namespace Xamarin_Android.Droid
         private EglBase rootEglBase;
 
 
-        /* HEATHER: public ISdpObserver sdp { get; set; }
-         * 
+        //HEATHER: public ISdpObserver sdp { get; set; }
+        
         private IVideoCapturerCapturerObserver capturerObserver { get; set; }
         private SurfaceTextureHelper surfaceTextureHelper { get; set; }
        
@@ -50,9 +50,8 @@ namespace Xamarin_Android.Droid
         private MediaProjectionManager mediaProjectionManager;
         private Intent mediaProjectionPermissionResultData;
         private MediaProjection.Callback mediaProjectionCallback;
-        */
+        
 
-        /* HEATHER 
         private void checkNotDisposed()
         {
             if (isDisposed)
@@ -68,7 +67,7 @@ namespace Xamarin_Android.Droid
                 return true;
             }
         }
-        */
+        
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -300,5 +299,47 @@ namespace Xamarin_Android.Droid
             localRenderView.RequestLayout();
             remoteRenderView.RequestLayout();
         }
+
+        public void Initialize(SurfaceTextureHelper surfaceTextureHelper, Context applicationContext, IVideoCapturerCapturerObserver capturerObserver)
+        {
+            if (capturerObserver == null)
+            {
+                throw new RuntimeException("capturerObserver not set.");
+            }
+            this.capturerObserver = capturerObserver;
+            if (surfaceTextureHelper == null)
+            {
+                throw new RuntimeException("surfaceTextureHelper not set.");
+            }
+            this.surfaceTextureHelper = surfaceTextureHelper;
+            mediaProjectionManager = (MediaProjectionManager)applicationContext.GetSystemService(
+                Context.MediaProjectionService);
+        }
+
+        public void StartCapture(int width, int height, int ignoredFramerate)
+        {
+
+            this.width = width;
+            this.height = height;
+            mediaProjection = mediaProjectionManager.GetMediaProjection(
+                1, mediaProjectionPermissionResultData);
+            //// Let MediaProjection callback use the SurfaceTextureHelper thread.
+            //mediaProjection.RegisterCallback(mediaProjectionCallback, surfaceTextureHelper.getHandler());
+            //createVirtualDisplay();
+            //capturerObserver.OnCapturerStarted(true);
+            //surfaceTextureHelper.StartListening();
+        }
+        private void createVirtualDisplay()
+        {
+            //surfaceTextureHelper.getSurfaceTexture().setDefaultBufferSize(width, height);
+            //virtualDisplay = mediaProjection.createVirtualDisplay("WebRTC_ScreenCapture", width, height,
+            //    VIRTUAL_DISPLAY_DPI, DISPLAY_FLAGS, new Surface(surfaceTextureHelper.getSurfaceTexture()),
+            //    null /* callback */, null /* callback handler */);
+        }
+        public void StopCapture()
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }
