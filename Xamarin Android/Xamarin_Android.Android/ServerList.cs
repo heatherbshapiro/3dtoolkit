@@ -20,8 +20,10 @@ namespace Xamarin_Android.Droid
         {
             base.OnCreate (savedInstanceState);
             string ServerList = Intent.GetStringExtra("server_list");
+            string myId = Intent.GetStringExtra("myId");
             string[] server = ServerList.Split();
             List<string> servers = server.ToList();
+            servers.RemoveAt(0);
 
             ListAdapter = new ArrayAdapter<string>(this, Resource.Layout.ServerList, servers);
 
@@ -29,10 +31,16 @@ namespace Xamarin_Android.Droid
 
             ListView.ItemClick += delegate (object sender, AdapterView.ItemClickEventArgs args) {
                 // When clicked, show a toast with the TextView text
-                //Toast.MakeText(Application, ((TextView)args.View).Text, ToastLength.Short).Show();
+                // Toast.MakeText(Application, ((TextView)args.View).Text, ToastLength.Short).Show();
                 // Here is where we move to video screening
-                Intent intent = new Intent(this, typeof(VideoStream));
-                intent.PutExtra("video_stream", sender.ToString());
+
+                string clicked = servers[args.Position].ToString();
+
+                string peerId = servers[args.Position].ToString().Split(',')[1];
+                Console.WriteLine("peerid + " + peerId);
+                Intent intent = new Intent(this, typeof(VideoStreamTest));
+                intent.PutExtra("sender", peerId);
+                intent.PutExtra("myId", myId);
                 StartActivity(intent);
             };
         }

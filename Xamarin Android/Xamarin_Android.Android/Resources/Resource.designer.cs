@@ -60,23 +60,23 @@ namespace Xamarin_Android.Droid
 		public partial class Id
 		{
 			
+			// aapt resource value: 0x7f050001
+			public const int NameText = 2131034113;
+			
 			// aapt resource value: 0x7f050000
 			public const int URLText = 2131034112;
 			
-			// aapt resource value: 0x7f050004
-			public const int local_video_layout = 2131034116;
-			
-			// aapt resource value: 0x7f050005
-			public const int local_video_view = 2131034117;
-			
-			// aapt resource value: 0x7f050001
-			public const int myButton = 2131034113;
-			
 			// aapt resource value: 0x7f050002
-			public const int remote_video_layout = 2131034114;
+			public const int myButton = 2131034114;
+			
+			// aapt resource value: 0x7f050004
+			public const int server_list = 2131034116;
 			
 			// aapt resource value: 0x7f050003
-			public const int remote_video_view = 2131034115;
+			public const int textItem = 2131034115;
+			
+			// aapt resource value: 0x7f050005
+			public const int video_view = 2131034117;
 			
 			static Id()
 			{
@@ -98,7 +98,7 @@ namespace Xamarin_Android.Droid
 			public const int ServerList = 2130903041;
 			
 			// aapt resource value: 0x7f030002
-			public const int VideoStream = 2130903042;
+			public const int VideoStreamTest = 2130903042;
 			
 			static Layout()
 			{
@@ -118,6 +118,9 @@ namespace Xamarin_Android.Droid
 			
 			// aapt resource value: 0x7f040000
 			public const int connect = 2130968576;
+			
+			// aapt resource value: 0x7f040003
+			public const int name = 2130968579;
 			
 			// aapt resource value: 0x7f040002
 			public const int url = 2130968578;

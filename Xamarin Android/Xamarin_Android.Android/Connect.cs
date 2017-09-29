@@ -19,13 +19,14 @@ namespace Xamarin_Android.Droid
     {
         public const string url = "http://3dtoolkit-signaling-server.azurewebsites.net";
         //public const string url = "http://127.0.0.1:3000";
-        public const string port = ":80";
+        public const string localName = "mameehan";
         public string GetServerList()
         {
             //Creates an HTTP request using the required URL
-            var req = new HttpWebRequest(new Uri (url + "/sign_in?peer_name=" + port));
+            var req = new HttpWebRequest(new Uri (url + "/sign_in?peer_name=" + localName));
             req.ContentType = "application/json";
             req.Method = "GET";
+            req.Headers["Peer-Type"] = "Client";
 
             using (HttpWebResponse response = req.GetResponse() as HttpWebResponse)
             {

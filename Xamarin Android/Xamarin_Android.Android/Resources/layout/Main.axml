@@ -8,6 +8,11 @@
         android:layout_height="wrap_content"
         android:id="@+id/URLText"
         android:text="@string/url" />
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/NameText"
+        android:text="@string/name" />
     <Button
         android:id="@+id/myButton"
         android:layout_width="match_parent"

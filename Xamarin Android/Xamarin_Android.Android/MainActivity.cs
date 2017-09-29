@@ -27,16 +27,18 @@ namespace Xamarin_Android.Droid
 			Button button = FindViewById<Button> (Resource.Id.myButton);
 
             EditText text = FindViewById<EditText>(Resource.Id.URLText);
-			
-			button.Click += delegate {
+            EditText nameText = FindViewById<EditText>(Resource.Id.NameText);
+
+            button.Click += delegate {
                 Connect connect = new Connect();
                 string content = connect.GetServerList();
+                int myId = Int32.Parse(content.ToString().Split(',')[1]);
 
-                Intent intent = new Intent(this, typeof(ServerList));
+                Intent intent = new Intent(this, typeof(VideoStreamTest));
+                intent.PutExtra("serverUrl", text.Text);
                 intent.PutExtra("server_list", content);
+                intent.PutExtra("myId", myId.ToString());
                 StartActivity(intent);
-
-            
             };
     
 		}

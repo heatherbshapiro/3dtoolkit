@@ -4,4 +4,5 @@
 	<string name="app_name">Xamarin_Android.Android</string>
   <!--<string name="url">http://3dtoolkit-signaling-server.azurewebsites.net</string>-->
   <string name="url">http://localhost:3000</string>
+  <string name="name">Margaret</string>
 </resources>
