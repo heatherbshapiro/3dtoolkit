@@ -20,7 +20,6 @@ namespace Xamarin_Android.Droid
         {
             base.OnCreate (savedInstanceState);
             string ServerList = Intent.GetStringExtra("server_list");
-            string myId = Intent.GetStringExtra("myId");
             string[] server = ServerList.Split();
             List<string> servers = server.ToList();
             servers.RemoveAt(0);
@@ -40,7 +39,6 @@ namespace Xamarin_Android.Droid
                 Console.WriteLine("peerid + " + peerId);
                 Intent intent = new Intent(this, typeof(VideoStreamTest));
                 intent.PutExtra("sender", peerId);
-                intent.PutExtra("myId", myId);
                 StartActivity(intent);
             };
         }
