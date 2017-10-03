@@ -6,6 +6,9 @@ using System.Text;
 using System.Timers;
 using System.Json;
 using System.Net.Http;
+using System.Net;
+using System.Threading.Tasks;
+using System.IO;
 
 using Android.App;
 using Android.Content;
@@ -22,9 +25,6 @@ using Android.Hardware.Display;
 using Android.Media.Projection;
 using static Org.Webrtc.DataChannel;
 using static Android.Opengl.GLSurfaceView;
-using System.Net;
-using System.Threading.Tasks;
-using System.IO;
 using Newtonsoft.Json;
 
 namespace Xamarin_Android.Droid
@@ -47,7 +47,6 @@ namespace Xamarin_Android.Droid
         int messageCounter;
 
         static HttpClient client; 
-        static JObject dataToSend; 
 
         static VideoTrack remoteVideoTrack;
         //static SurfaceViewRenderer fullscreenRenderer;
@@ -192,7 +191,7 @@ namespace Xamarin_Android.Droid
             client = new HttpClient();
 
             var json = JsonConvert.SerializeObject(data);
-            VideoStreamTest.dataToSend = (JObject)json;
+            JObject dataToSend = (JObject)json;
             var content = new StringContent(dataToSend.ToString(), Encoding.UTF8);
             content.Headers.Add("Peer-Type", "Client");
             content.Headers.Add("Content-Type", "text/plain");
@@ -316,7 +315,7 @@ namespace Xamarin_Android.Droid
 
             if (myId != "-1")
             {
-                /* Restart hanging get. TO DO: Do this the right way..*/
+                /* Restart hanging get. TO DO: Restart when timeout*/
                 StartHangingGet();
             }
 
@@ -479,6 +478,7 @@ namespace Xamarin_Android.Droid
 
             public void OnCreateSuccess(SessionDescription origSdp)
             {
+                //TO DO : FIX LOCAL AND REMOTE OBSERVERS (MAKE TWO OF THEM) 
 
                 string description = origSdp.Description;
                 // we want to use H264
@@ -495,7 +495,7 @@ namespace Xamarin_Android.Droid
                     // We created the offer
                     if (isInitiator)
                     {
-                        Dictionary<string, string> descriptionData = new Dictionary<string, string>();
+                        descriptionData = new Dictionary<string, string>();
                         descriptionData.Add("type", "offer");
                         descriptionData.Add("sdp", sdp.Description.ToString());
                         isInitiator = false;
@@ -515,7 +515,7 @@ namespace Xamarin_Android.Droid
                                 break;
                         }
 
-                        Dictionary<string, string> descriptionData = new Dictionary<string, string>();
+                        descriptionData = new Dictionary<string, string>();
                         descriptionData.Add("type", answerType.ToString());
                         descriptionData.Add("sdp", sdp.Description.ToString());
                         
