@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26730.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "StreamingNativeServerPlugin", "Plugins\NativeServerPlugin\StreamingNativeServerPlugin.vcxproj", "{6BC9C817-FD14-4540-A9C0-63CF16F770A6}"
 EndProject
@@ -72,6 +72,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xamarin_Android.Android", "Xamarin Android\Xamarin_Android.Android\Xamarin_Android.Android.csproj", "{E8484FB4-369B-435A-9B35-81D7BA4181BC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Xamarin_Android", "Xamarin Android\Xamarin_Android\Xamarin_Android.csproj", "{DB1BB991-E73F-4A3A-BA3E-24EB1A0EDF89}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "libwebrtc", "libwebrtc\libwebrtc.csproj", "{4721029E-F830-428D-8AF3-C011359B00FC}"
 EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
@@ -705,6 +707,36 @@ Global
 		{DB1BB991-E73F-4A3A-BA3E-24EB1A0EDF89}.Release|x64.Build.0 = Release|Any CPU
 		{DB1BB991-E73F-4A3A-BA3E-24EB1A0EDF89}.Release|x86.ActiveCfg = Release|Any CPU
 		{DB1BB991-E73F-4A3A-BA3E-24EB1A0EDF89}.Release|x86.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|iPhone.ActiveCfg = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|iPhone.Build.0 = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|iPhoneSimulator.ActiveCfg = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|iPhoneSimulator.Build.0 = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|x64.Build.0 = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Debug|x86.Build.0 = Debug|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|Any CPU.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|Any CPU.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|iPhone.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|iPhone.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|iPhoneSimulator.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|iPhoneSimulator.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|x64.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|x64.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|x86.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Profile|x86.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|iPhone.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|iPhone.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|iPhoneSimulator.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|iPhoneSimulator.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|x64.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|x64.Build.0 = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|x86.ActiveCfg = Release|Any CPU
+		{4721029E-F830-428D-8AF3-C011359B00FC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -740,5 +772,8 @@ Global
 		{95EB9544-2E62-4F54-8567-D55CD1DFD8FE} = {C1D9AA9A-9247-44AB-B59A-DEDA3DAD5C55}
 		{E8484FB4-369B-435A-9B35-81D7BA4181BC} = {E9049A23-41EA-452B-B6AF-6A2B4BD640A3}
 		{DB1BB991-E73F-4A3A-BA3E-24EB1A0EDF89} = {E9049A23-41EA-452B-B6AF-6A2B4BD640A3}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7CB022E0-6AEC-4176-84E9-7135CB3720D6}
 	EndGlobalSection
 EndGlobal

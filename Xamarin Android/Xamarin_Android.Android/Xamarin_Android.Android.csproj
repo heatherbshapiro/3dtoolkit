@@ -39,10 +39,6 @@
     <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="libwebrtc, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Downloads\libwebrtc\libwebrtc.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Newtonsoft.Json.10.0.3\lib\netstandard1.3\Newtonsoft.Json.dll</HintPath>
@@ -57,6 +53,10 @@
     <Reference Include="Mono.Android" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\libwebrtc\libwebrtc.csproj">
+      <Project>{4721029e-f830-428d-8af3-c011359b00fc}</Project>
+      <Name>libwebrtc</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Xamarin_Android\Xamarin_Android.csproj">
       <Name>Xamarin_Android</Name>
     </ProjectReference>
@@ -70,10 +70,6 @@
     <Compile Include="ServerList.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="lib\arm64-v8a\libjingle_peerconnection_so.so" />
-    <None Include="lib\armeabi-v7a\libjingle_peerconnection_so.so" />
-    <None Include="lib\x86\libjingle_peerconnection_so.so" />
-    <None Include="lib\x86_64\libjingle_peerconnection_so.so" />
     <None Include="packages.config" />
     <None Include="Resources\AboutResources.txt" />
     <None Include="Properties\AndroidManifest.xml">

@@ -50,7 +50,7 @@ namespace Xamarin_Android.Droid
 
         static VideoTrack remoteVideoTrack;
         //static SurfaceViewRenderer fullscreenRenderer;
-        private EglBase rootEglBase = EglBase.Create();
+        //private EglBase rootEglBase = EglBase.Create();
 
         MediaConstraints pcConstraints;
         //MediaConstraints videoConstraints;
@@ -67,7 +67,7 @@ namespace Xamarin_Android.Droid
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            //Java.Lang.JavaSystem.LoadLibrary("libjingle_peerconnection_so");
+            Java.Lang.JavaSystem.LoadLibrary("jingle_peerconnection_so");
 
             SetContentView(Resource.Layout.VideoStreamTest);
 
@@ -143,6 +143,8 @@ namespace Xamarin_Android.Droid
             /* Supply the media constraints */
             pcConstraints = new MediaConstraints();
             pcConstraints.Optional.Add(new MediaConstraints.KeyValuePair("DtlsSrtpKeyAgreement", "true"));
+            pcConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "false"));
+            pcConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
 
             // ARE AUDIO AND SDPMEDIA CONSTRAINTS NECESSARY? 
             // audioConstraints = new MediaConstraints();
@@ -154,12 +156,13 @@ namespace Xamarin_Android.Droid
             /* Create the Ice Server */
             PeerConnection.IceServer ice = new PeerConnection.IceServer("turnserver3dstreaming.centralus.cloudapp.azure.com:5349", "user", "3Dtoolkit072017", PeerConnection.TlsCertPolicy.TlsCertPolicyInsecureNoCheck);
             //PeerConnection.IceTransportsType type = PeerConnection.IceTransportsType.Relay;
-            List<PeerConnection.IceServer> iceServers = new List<PeerConnection.IceServer>();
-            iceServers.Add(ice);
+            //List<PeerConnection.IceServer> iceServers = new List<PeerConnection.IceServer>();
+            //iceServers.Add(ice);
+            List<PeerConnection.IceServer> iceServers = new List<PeerConnection.IceServer> { ice };
 
             //TESTED USING AN RTCONFIG INSTEAD OF SERVERS LIST 
-            //PeerConnection.RTCConfiguration rtcConfig = new PeerConnection.RTCConfiguration(servers);
-            //rtcConfig.IceTransportsType = PeerConnection.IceTransportsType.Relay;
+            PeerConnection.RTCConfiguration rtcConfig = new PeerConnection.RTCConfiguration(iceServers);
+            rtcConfig.IceTransportsType = PeerConnection.IceTransportsType.Relay;
 
             /* Create the observer */
             pcObserver = new PeerObserver();
@@ -171,7 +174,7 @@ namespace Xamarin_Android.Droid
 
             /* Establish peer connection */
 
-            peerConnection = pcFactory.CreatePeerConnection(iceServers, pcConstraints, pcObserver);
+            peerConnection = pcFactory.CreatePeerConnection(rtcConfig, pcConstraints, pcObserver);
             Console.Write("createPeerConnection: PeerConnection = " + peerConnection.ToString());
         }
 

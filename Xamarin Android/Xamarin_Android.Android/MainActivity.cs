@@ -31,7 +31,7 @@ namespace Xamarin_Android.Droid
 
             button.Click += delegate {
                 Connect connect = new Connect();
-                string content = connect.GetServerList();
+                string content = connect.GetServerList(nameText.Text);
                 int myId = Int32.Parse(content.ToString().Split(',')[1]);
 
                 Intent intent = new Intent(this, typeof(VideoStreamTest));
