@@ -1,1 +1,0 @@
-﻿Add libwebrtc.aar here and build the project to generate the binding library (libwebrtc.dll).

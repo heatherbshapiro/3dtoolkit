@@ -26,6 +26,7 @@ using Android.Media.Projection;
 using static Org.Webrtc.DataChannel;
 using static Android.Opengl.GLSurfaceView;
 using Newtonsoft.Json;
+using Java.Util.Regex;
 
 namespace Xamarin_Android.Droid
 {
@@ -70,6 +71,8 @@ namespace Xamarin_Android.Droid
             Java.Lang.JavaSystem.LoadLibrary("jingle_peerconnection_so");
 
             SetContentView(Resource.Layout.VideoStreamTest);
+
+            //var eglBase = Java.Lang.Class.ForName("microsoft.a3dtoolkitandroid.util").NewInstance();
 
             /* TO DO: Initialize Video Tracks/Renderin. Errors with SurfaceViewRenderer */
             //fullscreenRenderer = FindViewById<SurfaceViewRenderer>(Resource.Id.video_view);
@@ -154,7 +157,7 @@ namespace Xamarin_Android.Droid
             sdpMediaConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
 
             /* Create the Ice Server */
-            PeerConnection.IceServer ice = new PeerConnection.IceServer("turnserver3dstreaming.centralus.cloudapp.azure.com:5349", "user", "3Dtoolkit072017", PeerConnection.TlsCertPolicy.TlsCertPolicyInsecureNoCheck);
+            PeerConnection.IceServer ice = new PeerConnection.IceServer("turn:turnserver3dstreaming.centralus.cloudapp.azure.com:5349", "user", "3Dtoolkit072017", PeerConnection.TlsCertPolicy.TlsCertPolicyInsecureNoCheck);
             //PeerConnection.IceTransportsType type = PeerConnection.IceTransportsType.Relay;
             //List<PeerConnection.IceServer> iceServers = new List<PeerConnection.IceServer>();
             //iceServers.Add(ice);
@@ -358,6 +361,83 @@ namespace Xamarin_Android.Droid
             }, null, TimeSpan.FromSeconds(heartBeatIntervalInSecs), TimeSpan.FromSeconds(heartBeatIntervalInSecs));
         }
 
+        /**
+     * Changes a SDP description to prefer the given video or audio codec and returns a new description string
+     * @param sdpDescription: original SDP description
+     * @param codec: Codec name to switch to
+     * @param isAudio: Is codec an audio codec?
+     * @return updated SDP description string
+     */
+        private static string PreferCodec(string sdpDescription, string codec, bool isAudio)
+        {
+            string[] lines = sdpDescription.Split(new[] { "\r\n" }, StringSplitOptions.None);
+            int mLineIndex = -1;
+            string codecRtpMap = null;
+            // a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding parameters>]
+            string regex = "^a=rtpmap:(\\d+) " + codec + "(/\\d+)+[\r]?$";
+            Java.Util.Regex.Pattern codecPattern = Java.Util.Regex.Pattern.Compile(regex);
+            string mediaDescription = "m=video ";
+            if (isAudio)
+            {
+                mediaDescription = "m=audio ";
+            }
+            for (int i = 0; (i < lines.Length) && (mLineIndex == -1 || codecRtpMap == null); i++)
+            {
+                if (lines[i].StartsWith(mediaDescription))
+                {
+                    mLineIndex = i;
+                    continue;
+                }
+                Matcher codecMatcher = codecPattern.Matcher(lines[i]);
+                if (codecMatcher.Matches())
+                {
+                    codecRtpMap = codecMatcher.Group(1);
+                }
+            }
+            if (mLineIndex == -1)
+            {
+                //Log.w(LOG, "No " + mediaDescription + " line, so can't prefer " + codec);
+                return sdpDescription;
+            }
+            if (codecRtpMap == null)
+            {
+                //Log.w(LOG, "No rtpmap for " + codec);
+                return sdpDescription;
+            }
+            //Log.d(LOG, "Found " + codec + " rtpmap " + codecRtpMap + ", prefer at " + lines[mLineIndex]);
+            string[] origMLineParts = lines[mLineIndex].Split(' ');
+            if (origMLineParts.Length > 3)
+            {
+                Java.Lang.StringBuilder newMLine = new Java.Lang.StringBuilder();
+                int origPartIndex = 0;
+                // Format is: m=<media> <port> <proto> <fmt> ...
+                newMLine.Append(origMLineParts[origPartIndex++]).Append(" ");
+                newMLine.Append(origMLineParts[origPartIndex++]).Append(" ");
+                newMLine.Append(origMLineParts[origPartIndex++]).Append(" ");
+                newMLine.Append(codecRtpMap);
+                for (; origPartIndex < origMLineParts.Length; origPartIndex++)
+                {
+                    if (!origMLineParts[origPartIndex].Equals(codecRtpMap))
+                    {
+                        newMLine.Append(" ").Append(origMLineParts[origPartIndex]);
+                    }
+                }
+                lines[mLineIndex] = newMLine.ToString();
+                //Log.d(LOG, "Change media description: " + lines[mLineIndex]);
+            }
+            else
+            {
+                //Log.e(LOG, "Wrong SDP media description format: " + lines[mLineIndex]);
+            }
+            Java.Lang.StringBuilder newSdpDescription = new Java.Lang.StringBuilder();
+            foreach (string line in lines)
+            {
+                newSdpDescription.Append(line).Append("\r\n");
+            }
+            return newSdpDescription.ToString();
+        }
+
+
         private class PeerObserver : Java.Lang.Object, PeerConnection.IObserver
         {
             public new void Dispose()
@@ -432,13 +512,12 @@ namespace Xamarin_Android.Droid
 
             public void OnRenegotiationNeeded()
             {
-                throw new NotImplementedException();
-
+                
             }
 
             public void OnSignalingChange(PeerConnection.SignalingState p0)
             {
-                throw new NotImplementedException();
+                
             }
         }
 
@@ -483,45 +562,55 @@ namespace Xamarin_Android.Droid
             {
                 //TO DO : FIX LOCAL AND REMOTE OBSERVERS (MAKE TWO OF THEM) 
 
+                //****   Need to be able to get type from origSdp    ***** 
+
                 string description = origSdp.Description;
                 // we want to use H264
-                description.Replace("96 98 100 102", "100 96 98 102");
+                //description.Replace("96 98 100 102", "100 96 98 102");
+                description = PreferCodec(description, "H264", false);
 
                 //Annoying conversion from System.Type to SessionDescription.Type (HOPEFULLY CAN CHANGE)
-                SessionDescription.Type sdpType = SessionDescription.Type.FromCanonicalForm(origSdp.GetType().ToString());
+                //SessionDescription.Type sdpType = SessionDescription.Type.FromCanonicalForm(origSdp.GetType().ToString());
 
                 //Recreate the new offer object
-                SessionDescription sdp = new SessionDescription(sdpType, description);
 
+
+                SessionDescription sdp;
                 if (peerConnection != null)
                 {
                     // We created the offer
                     if (isInitiator)
                     {
-                        descriptionData = new Dictionary<string, string>();
-                        descriptionData.Add("type", "offer");
-                        descriptionData.Add("sdp", sdp.Description.ToString());
+                        sdp = new SessionDescription(SessionDescription.Type.Offer, description);
+                        descriptionData = new Dictionary<string, string>
+                        {
+                            { "type", "offer" },
+                            { "sdp", sdp.Description.ToString() }
+                        };
                         isInitiator = false;
                     }
                     // 
                     else
                     {
+                        sdp = new SessionDescription(SessionDescription.Type.Answer, description);
                         Console.Write("creating answer");
-                        SessionDescription.Type answerType = null;
-                        switch (sdpType.ToString()) {
-                            case ("offer"):
-                                answerType = SessionDescription.Type.Offer;
-                                break;
-                            case ("answer"):
-                            case ("pranswer"):
-                                answerType = SessionDescription.Type.Answer;
-                                break;
-                        }
+                        //SessionDescription.Type answerType = null;
+                        //switch (sdpType.ToString()) {
+                        //    case ("offer"):
+                        //        answerType = SessionDescription.Type.Offer;
+                        //        break;
+                        //    case ("answer"):
+                        //    case ("pranswer"):
+                        //        answerType = SessionDescription.Type.Answer;
+                        //        break;
+                        //}
 
-                        descriptionData = new Dictionary<string, string>();
-                        descriptionData.Add("type", answerType.ToString());
-                        descriptionData.Add("sdp", sdp.Description.ToString());
-                        
+                        descriptionData = new Dictionary<string, string>
+                        {
+                            { "type", SessionDescription.Type.Answer.ToString() },
+                            { "sdp", sdp.Description.ToString() }
+                        };
+
                     }
 
                     peerConnection.SetLocalDescription(sdpObserver, sdp); 
