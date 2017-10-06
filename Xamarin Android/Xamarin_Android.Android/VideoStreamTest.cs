@@ -64,7 +64,9 @@ namespace Xamarin_Android.Droid
         static ISdpObserver sdpObserver;
 
         static bool isInitiator;
-        
+
+        static SurfaceViewRenderer remoteVideoRenderer;
+
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -181,7 +183,7 @@ namespace Xamarin_Android.Droid
             Console.Write("createPeerConnection: PeerConnection = " + peerConnection.ToString());
         }
 
-        static async void SendToPeer(string peer, Dictionary<string, string> data)
+        static async Task SendToPeer(string peer, Dictionary<string, string> data)
         {
             if (myId == "-1")
             {
@@ -197,16 +199,19 @@ namespace Xamarin_Android.Droid
             client = new HttpClient();
 
             var json = JsonConvert.SerializeObject(data);
-            JObject dataToSend = (JObject)json;
-            var content = new StringContent(dataToSend.ToString(), Encoding.UTF8);
+            JObject dataToSend = JObject.Parse(json);
+            //var content = new StringContent(dataToSend.ToString(), Encoding.UTF8, "text/plain");
+            var content = new StringContent(json, Encoding.UTF8, "text/plain");
+            //var content = new StringContent("Test", Encoding.UTF8);
             content.Headers.Add("Peer-Type", "Client");
-            content.Headers.Add("Content-Type", "text/plain");
+            //content.Headers.Add("Content-Type", "text/plain");
+            Console.WriteLine("This is weird");
             var req = new Uri(url + "/message?peer_id=" + myId + "&to=" + peer);
             HttpResponseMessage response = null;
             response = await client.PostAsync(req, content);
             if (response.IsSuccessStatusCode)
             {
-                System.Diagnostics.Debug.WriteLine("Successfully sent message to peer");
+                Console.WriteLine("Successfully sent message to peer: {0}", response.Content.ToString());
             }
         }
 
@@ -217,7 +222,11 @@ namespace Xamarin_Android.Droid
 
             Console.WriteLine("Received " + data.ToString());
 
-            if (data.GetValue("type").Equals("offer"))
+            var test = data.GetValue("type").ToString();
+            var token = data.SelectToken("type");
+            var last = data.Last;
+
+            if (data.GetValue("type").ToString().Equals("offer"))
             {
                 SessionDescription sdp = new SessionDescription(SessionDescription.Type.Offer, data.GetValue("sdp").ToString());
                 CreatePeerConnection(sender);
@@ -225,7 +234,7 @@ namespace Xamarin_Android.Droid
                 VideoStreamTest.peerConnection.SetRemoteDescription(sdpObserver, sdp);
                 peerConnection.CreateAnswer(sdpObserver, sdpMediaConstraints);
             }
-            else if (data.GetValue("type").Equals("answer") || data.GetValue("type").Equals("pranswer"))
+            else if (data.GetValue("type").ToString().Equals("answer") || data.GetValue("type").ToString().Equals("pranswer"))
             {
                 SessionDescription sdp = new SessionDescription(SessionDescription.Type.Answer, data.GetValue("sdp").ToString());
                 peerConnection.SetRemoteDescription(sdpObserver, sdp);
@@ -305,6 +314,7 @@ namespace Xamarin_Android.Droid
             using (StreamReader reader = new StreamReader(response.GetResponseStream()))
             {
                 data = reader.ReadToEnd();
+                //data.Replace("96 97 98 99", "100 96 98 102");
                 jsonObj = JObject.Parse(data);
             }
 
@@ -437,6 +447,8 @@ namespace Xamarin_Android.Droid
         //    return newSdpDescription.ToString();
         //}
 
+        
+
 
         private class PeerObserver : Java.Lang.Object, PeerConnection.IObserver
         {
@@ -460,14 +472,15 @@ namespace Xamarin_Android.Droid
                 {
                     remoteVideoTrack = (VideoTrack)stream.VideoTracks.Get(0);
                     // TO DO: MAKE A RUNNABLE
-                    // remoteVideoTrack.SetEnabled(true);
-                    // remoteVideoTrack.AddRenderer(new VideoRenderer(fullscreenRenderer));
+                    remoteVideoTrack.SetEnabled(true);
+                    remoteVideoTrack.AddRenderer(new VideoRenderer(remoteVideoRenderer));
                 }
             }
 
             public void OnAddTrack(RtpReceiver p0, MediaStream[] p1)
             {
-                throw new NotImplementedException();
+                Console.WriteLine(p0.ToString());
+                Console.WriteLine(p1.ToString());
             }
 
             public void OnDataChannel(DataChannel p0)
@@ -492,7 +505,7 @@ namespace Xamarin_Android.Droid
 
             public void OnIceConnectionChange(PeerConnection.IceConnectionState p0)
             {
-                throw new NotImplementedException();
+                Console.WriteLine(p0.ToString());
             }
 
             public void OnIceConnectionReceivingChange(bool p0)
@@ -502,7 +515,7 @@ namespace Xamarin_Android.Droid
 
             public void OnIceGatheringChange(PeerConnection.IceGatheringState p0)
             {
-                throw new NotImplementedException();
+                Console.WriteLine(p0.ToString());
             }
 
             public void OnRemoveStream(MediaStream p0)
@@ -631,7 +644,7 @@ namespace Xamarin_Android.Droid
 
             public async void OnSetSuccess()
             {
-                SendToPeer(peerId, descriptionData);
+                await SendToPeer(peerId, descriptionData);
             }
         }
     }
