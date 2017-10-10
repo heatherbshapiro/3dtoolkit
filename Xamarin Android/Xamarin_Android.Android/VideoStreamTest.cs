@@ -63,7 +63,11 @@ namespace Xamarin_Android.Droid
         PeerConnection.IObserver pcObserver;
         static ISdpObserver sdpObserver;
 
+        ArrayAdapter<string> adapter;
+
         static bool isInitiator;
+        static bool isLocal;
+        static bool isRemote;
 
         static SurfaceViewRenderer remoteVideoRenderer;
 
@@ -99,8 +103,8 @@ namespace Xamarin_Android.Droid
             }
 
             serverList = FindViewById<ListView>(Resource.Id.server_list);
-
-            serverList.Adapter = new ArrayAdapter<string>(this, Resource.Layout.VideoStreamTest, Resource.Id.textItem, servers); ;
+            adapter = new ArrayAdapter<string>(this, Resource.Layout.VideoStreamTest, Resource.Id.textItem, servers);
+            serverList.Adapter = adapter;
 
             BeginProcess();
 
@@ -123,7 +127,7 @@ namespace Xamarin_Android.Droid
             StartHangingGet();
             Console.Write("IM DONE THIS TASK");
             StartHeartBeat();
-            UpdatePeerList(); 
+            //UpdatePeerList(); 
         }
 
         public void JoinPeer(string peer)
@@ -137,7 +141,6 @@ namespace Xamarin_Android.Droid
 
             isInitiator = true;
             peerConnection.CreateOffer(sdpObserver, sdpMediaConstraints);
-            //SDPObserver will handle the response from CreateOffer. THen completion handler calls:
         }
 
         public void CreatePeerConnection(string peer)
@@ -160,12 +163,7 @@ namespace Xamarin_Android.Droid
 
             /* Create the Ice Server */
             PeerConnection.IceServer ice = new PeerConnection.IceServer("turn:turnserver3dstreaming.centralus.cloudapp.azure.com:5349", "user", "3Dtoolkit072017", PeerConnection.TlsCertPolicy.TlsCertPolicyInsecureNoCheck);
-            //PeerConnection.IceTransportsType type = PeerConnection.IceTransportsType.Relay;
-            //List<PeerConnection.IceServer> iceServers = new List<PeerConnection.IceServer>();
-            //iceServers.Add(ice);
             List<PeerConnection.IceServer> iceServers = new List<PeerConnection.IceServer> { ice };
-
-            //TESTED USING AN RTCONFIG INSTEAD OF SERVERS LIST 
             PeerConnection.RTCConfiguration rtcConfig = new PeerConnection.RTCConfiguration(iceServers);
             rtcConfig.IceTransportsType = PeerConnection.IceTransportsType.Relay;
 
@@ -200,12 +198,8 @@ namespace Xamarin_Android.Droid
 
             var json = JsonConvert.SerializeObject(data);
             JObject dataToSend = JObject.Parse(json);
-            //var content = new StringContent(dataToSend.ToString(), Encoding.UTF8, "text/plain");
             var content = new StringContent(json, Encoding.UTF8, "text/plain");
-            //var content = new StringContent("Test", Encoding.UTF8);
             content.Headers.Add("Peer-Type", "Client");
-            //content.Headers.Add("Content-Type", "text/plain");
-            Console.WriteLine("This is weird");
             var req = new Uri(url + "/message?peer_id=" + myId + "&to=" + peer);
             HttpResponseMessage response = null;
             response = await client.PostAsync(req, content);
@@ -222,21 +216,18 @@ namespace Xamarin_Android.Droid
 
             Console.WriteLine("Received " + data.ToString());
 
-            var test = data.GetValue("type").ToString();
-            var token = data.SelectToken("type");
-            var last = data.Last;
-
             if (data.GetValue("type").ToString().Equals("offer"))
             {
                 SessionDescription sdp = new SessionDescription(SessionDescription.Type.Offer, data.GetValue("sdp").ToString());
                 CreatePeerConnection(sender);
-                //isRemote = true;
+                isRemote = true;
                 VideoStreamTest.peerConnection.SetRemoteDescription(sdpObserver, sdp);
                 peerConnection.CreateAnswer(sdpObserver, sdpMediaConstraints);
             }
             else if (data.GetValue("type").ToString().Equals("answer") || data.GetValue("type").ToString().Equals("pranswer"))
             {
                 SessionDescription sdp = new SessionDescription(SessionDescription.Type.Answer, data.GetValue("sdp").ToString());
+                isRemote = true;
                 peerConnection.SetRemoteDescription(sdpObserver, sdp);
             }
 
@@ -255,10 +246,12 @@ namespace Xamarin_Android.Droid
         {
             try
             {
-                foreach (KeyValuePair<string, string> peer in otherPeers)
+                foreach (string peer in servers)
                 {
-                    servers.Add(peer.Value);
                     Console.Write("data set change");
+                    adapter.Clear();
+                    adapter.AddAll(servers);
+                    adapter.NotifyDataSetChanged();
                 }
             }
             catch (System.Exception e)
@@ -272,6 +265,7 @@ namespace Xamarin_Android.Droid
             string[] info = server.Trim().Split(',');
             if (Int32.Parse(info[2]) != 0)
             {
+                servers.Add(server);
                 otherPeers.Add(info[1], info[0]);
             }
             UpdatePeerList();
@@ -314,18 +308,17 @@ namespace Xamarin_Android.Droid
             using (StreamReader reader = new StreamReader(response.GetResponseStream()))
             {
                 data = reader.ReadToEnd();
-                //data.Replace("96 97 98 99", "100 96 98 102");
-                jsonObj = JObject.Parse(data);
             }
 
             string sender = response.GetResponseHeader("Pragma");
 
             if (sender == myId)
             {
-                HandleServerNotification(jsonObj.GetValue("Server").ToString());
+                HandleServerNotification(data);
             }
             else
             {
+                jsonObj = JObject.Parse(data);
                 HandlePeerMessage(sender, jsonObj);
             }
 
@@ -370,84 +363,6 @@ namespace Xamarin_Android.Droid
                 }
             }, null, TimeSpan.FromSeconds(heartBeatIntervalInSecs), TimeSpan.FromSeconds(heartBeatIntervalInSecs));
         }
-
-        ///**
-        // * Changes a SDP description to prefer the given video or audio codec and returns a new description string
-        // * @param sdpDescription: original SDP description
-        // * @param codec: Codec name to switch to
-        // * @param isAudio: Is codec an audio codec?
-        // * @return updated SDP description string
-        // */
-        //private static string PreferCodec(string sdpDescription, string codec, bool isAudio)
-        //{
-        //    string[] lines = sdpDescription.Split(new[] { "\r\n" }, StringSplitOptions.None);
-        //    int mLineIndex = -1;
-        //    string codecRtpMap = null;
-        //    // a=rtpmap:<payload type> <encoding name>/<clock rate> [/<encoding parameters>]
-        //    string regex = "^a=rtpmap:(\\d+) " + codec + "(/\\d+)+[\r]?$";
-        //    Java.Util.Regex.Pattern codecPattern = Java.Util.Regex.Pattern.Compile(regex);
-        //    string mediaDescription = "m=video ";
-        //    if (isAudio)
-        //    {
-        //        mediaDescription = "m=audio ";
-        //    }
-        //    for (int i = 0; (i < lines.Length) && (mLineIndex == -1 || codecRtpMap == null); i++)
-        //    {
-        //        if (lines[i].StartsWith(mediaDescription))
-        //        {
-        //            mLineIndex = i;
-        //            continue;
-        //        }
-        //        Matcher codecMatcher = codecPattern.Matcher(lines[i]);
-        //        if (codecMatcher.Matches())
-        //        {
-        //            codecRtpMap = codecMatcher.Group(1);
-        //        }
-        //    }
-        //    if (mLineIndex == -1)
-        //    {
-        //        //Log.w(LOG, "No " + mediaDescription + " line, so can't prefer " + codec);
-        //        return sdpDescription;
-        //    }
-        //    if (codecRtpMap == null)
-        //    {
-        //        //Log.w(LOG, "No rtpmap for " + codec);
-        //        return sdpDescription;
-        //    }
-        //    //Log.d(LOG, "Found " + codec + " rtpmap " + codecRtpMap + ", prefer at " + lines[mLineIndex]);
-        //    string[] origMLineParts = lines[mLineIndex].Split(' ');
-        //    if (origMLineParts.Length > 3)
-        //    {
-        //        Java.Lang.StringBuilder newMLine = new Java.Lang.StringBuilder();
-        //        int origPartIndex = 0;
-        //        // Format is: m=<media> <port> <proto> <fmt> ...
-        //        newMLine.Append(origMLineParts[origPartIndex++]).Append(" ");
-        //        newMLine.Append(origMLineParts[origPartIndex++]).Append(" ");
-        //        newMLine.Append(origMLineParts[origPartIndex++]).Append(" ");
-        //        newMLine.Append(codecRtpMap);
-        //        for (; origPartIndex < origMLineParts.Length; origPartIndex++)
-        //        {
-        //            if (!origMLineParts[origPartIndex].Equals(codecRtpMap))
-        //            {
-        //                newMLine.Append(" ").Append(origMLineParts[origPartIndex]);
-        //            }
-        //        }
-        //        lines[mLineIndex] = newMLine.ToString();
-        //        //Log.d(LOG, "Change media description: " + lines[mLineIndex]);
-        //    }
-        //    else
-        //    {
-        //        //Log.e(LOG, "Wrong SDP media description format: " + lines[mLineIndex]);
-        //    }
-        //    Java.Lang.StringBuilder newSdpDescription = new Java.Lang.StringBuilder();
-        //    foreach (string line in lines)
-        //    {
-        //        newSdpDescription.Append(line).Append("\r\n");
-        //    }
-        //    return newSdpDescription.ToString();
-        //}
-
-        
 
 
         private class PeerObserver : Java.Lang.Object, PeerConnection.IObserver
@@ -573,66 +488,43 @@ namespace Xamarin_Android.Droid
 
             public void OnCreateSuccess(SessionDescription origSdp)
             {
-                //TO DO : FIX LOCAL AND REMOTE OBSERVERS (MAKE TWO OF THEM) 
-
-                //****   Need to be able to get type from origSdp    ***** 
+                /* This can be called on CreateAnswer Success or CreateOffer Success. */
 
                 string description = origSdp.Description;
 
-                // we want to use H264
-                description.Replace("96 97 98 99", "100 96 98 102");
-                //description = PreferCodec(description, "H264", false);
+                SessionDescription sd;
+                if (peerConnection != null)
+                {
+                    //We created the offer
+                    if (isInitiator)
+                    {
+                        // we want to use H264
+                        description.Replace("96 97 98 99", "100 96 98 102");
 
-                //Annoying conversion from System.Type to SessionDescription.Type (HOPEFULLY CAN CHANGE)
-                //SessionDescription.Type sdpType = SessionDescription.Type.FromCanonicalForm(origSdp.GetType().ToString());
-
-                //Recreate the new offer object
-
-
-                SessionDescription sd = new SessionDescription(SessionDescription.Type.Offer, description);
-                descriptionData = new Dictionary<string, string>
+                        sd = new SessionDescription(SessionDescription.Type.Offer, description);
+                        descriptionData = new Dictionary<string, string>
                         {
                             { "type", "offer" },
                             { "sdp", sd.Description.ToString() }
                         };
-                var test = sd.Description;
-                if (peerConnection != null)
-                {
-                    // We created the offer
-                    //if (isInitiator)
-                    //{
-                    //    sd = new SessionDescription(SessionDescription.Type.Offer, description);
-                    //    descriptionData = new Dictionary<string, string>
-                    //    {
-                    //        { "type", "offer" },
-                    //        { "sdp", sd.Description.ToString() }
-                    //    };
-                    //    isInitiator = false;
-                    //}
-                    //// 
-                    //else
-                    //{
-                    //    sd = new SessionDescription(SessionDescription.Type.Answer, description);
-                    //    Console.Write("creating answer");
-                    //    //SessionDescription.Type answerType = null;
-                    //    //switch (sdpType.ToString()) {
-                    //    //    case ("offer"):
-                    //    //        answerType = SessionDescription.Type.Offer;
-                    //    //        break;
-                    //    //    case ("answer"):
-                    //    //    case ("pranswer"):
-                    //    //        answerType = SessionDescription.Type.Answer;
-                    //    //        break;
-                    //    //}
 
-                    //    descriptionData = new Dictionary<string, string>
-                    //    {
-                    //        { "type", SessionDescription.Type.Answer.ToString() },
-                    //        { "sdp", sd.Description.ToString() }
-                    //    };
+                        isInitiator = false;
+                    }
+                    // Creating an answer
+                    else
+                    {
+                        sd = new SessionDescription(SessionDescription.Type.Answer, description);
+                        Console.Write("creating answer");
+                        
+                        descriptionData = new Dictionary<string, string>
+                        {
+                            { "type", "answer" },
+                            { "sdp", sd.Description.ToString() }
+                        };
 
-                    //}
+                    }
 
+                    isLocal = true;
                     peerConnection.SetLocalDescription(sdpObserver, sd); 
                 }
             }
@@ -644,7 +536,22 @@ namespace Xamarin_Android.Droid
 
             public async void OnSetSuccess()
             {
-                await SendToPeer(peerId, descriptionData);
+                if (isLocal)
+                {
+                    isLocal = false;
+                    await SendToPeer(peerId, descriptionData);
+                }
+                if (isRemote)
+                {
+                    isRemote = false;
+                    // we just set a remote description
+                    Console.WriteLine("Successfully set the remote description");
+                }
+                else
+                {
+                    Console.WriteLine("how'd we end up here dood");
+                }
+                
             }
         }
     }
