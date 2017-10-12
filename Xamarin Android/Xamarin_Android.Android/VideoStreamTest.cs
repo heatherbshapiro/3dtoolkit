@@ -45,6 +45,7 @@ namespace Xamarin_Android.Droid
         static string peerId;
 
         int heartBeatIntervalInSecs = 5;
+        System.Threading.Timer timer;
         int messageCounter;
 
         static HttpClient client; 
@@ -128,6 +129,60 @@ namespace Xamarin_Android.Droid
             Console.Write("IM DONE THIS TASK");
             StartHeartBeat();
             //UpdatePeerList(); 
+        }
+
+        public void Disconnect()
+        {
+            // Stop the heartbeat
+            if (timer != null)
+            {
+                timer.Dispose();
+            }
+            if (peerConnection != null)
+            {
+                peerConnection.Close();
+                peerConnection.Dispose();
+                peerConnection = null;
+            }
+            if (pcFactory != null)
+            {
+                pcFactory.Dispose();
+                pcFactory = null;
+            }
+            // CLOSE OUT RENDERER, EGL BASE WHEN CREATED. 
+
+            PeerConnectionFactory.StopInternalTracingCapture();
+            PeerConnectionFactory.ShutdownInternalTracer();
+
+            if (myId != "-1")
+            {
+                //Tell the server we are signing out
+                var req = new HttpWebRequest(new Uri(url + "/sign_out?peer_id=" + myId));
+                req.Method = "GET";
+                req.Headers["Peer-Type"] = "Client";
+
+                using (HttpWebResponse response = req.GetResponse() as HttpWebResponse)
+                {
+                    if (response.StatusCode != HttpStatusCode.OK)
+                    {
+                        Console.WriteLine("Cannot connect to server");
+                    }
+                    using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                    {
+                        var content = reader.ReadToEnd();
+                        if (string.IsNullOrWhiteSpace(content))
+                        {
+                            Console.Out.WriteLine("Response contained empty body...");
+                        }
+                        else
+                        {
+                            Console.WriteLine("Response: \r\n {0}", content);
+                        }
+                    }
+                }
+
+                myId = "-1";
+            }
         }
 
         public void JoinPeer(string peer)
@@ -286,6 +341,7 @@ namespace Xamarin_Android.Droid
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
                         Console.WriteLine("Cannot connect to server");
+                        Disconnect();
                     }
                     else
                     {
@@ -332,7 +388,7 @@ namespace Xamarin_Android.Droid
 
         public void StartHeartBeat()
         {
-            var timer = new System.Threading.Timer((e) =>
+            timer = new System.Threading.Timer((e) =>
             {
 
                 var req = new HttpWebRequest(new Uri(url + "/heartbeat?peer_id=" + myId));
