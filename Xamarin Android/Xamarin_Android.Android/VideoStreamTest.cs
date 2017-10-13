@@ -51,8 +51,8 @@ namespace Xamarin_Android.Droid
         static HttpClient client; 
 
         static VideoTrack remoteVideoTrack;
-        //static SurfaceViewRenderer fullscreenRenderer;
-        //private EglBase rootEglBase = EglBase.Create();
+        static SurfaceViewRenderer remoteVideoRenderer;
+   
 
         MediaConstraints pcConstraints;
         //MediaConstraints videoConstraints;
@@ -70,8 +70,6 @@ namespace Xamarin_Android.Droid
         static bool isLocal;
         static bool isRemote;
 
-        static SurfaceViewRenderer remoteVideoRenderer;
-
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -82,8 +80,6 @@ namespace Xamarin_Android.Droid
             //var eglBase = Java.Lang.Class.ForName("microsoft.a3dtoolkitandroid.util").NewInstance();
 
             /* TO DO: Initialize Video Tracks/Renderin. Errors with SurfaceViewRenderer */
-            //fullscreenRenderer = FindViewById<SurfaceViewRenderer>(Resource.Id.video_view);
-            //fullscreenRenderer.Init(rootEglBase.EglBaseContext, null);
 
             /* Grab server list and create view */
             string ServerList = Intent.GetStringExtra("server_list");
@@ -117,10 +113,18 @@ namespace Xamarin_Android.Droid
                 Console.WriteLine("peername: " + serverName);
 
                 JoinPeer(peer);
+
+                IEglBase eglBase = (IEglBase)EglBaseFactory.Create();
+                var layout = new LinearLayout(this);
+                var video_view = new SurfaceViewRenderer(this);
+                layout.AddView(video_view);
+                remoteVideoRenderer = video_view;
+                EglBaseContext context = eglBase.GetEglBaseContext();
+                remoteVideoRenderer.Init(context, null);
+                SetContentView(layout);
+
+                //remoteVideoRenderer = FindViewById<SurfaceViewRenderer>(Resource.Id.video_view);
             };
-
-            //peerConnection = null;
-
         }
 
         protected void BeginProcess()
@@ -594,8 +598,8 @@ namespace Xamarin_Android.Droid
             {
                 if (isLocal)
                 {
-                    isLocal = false;
                     await SendToPeer(peerId, descriptionData);
+                    isLocal = false;
                 }
                 if (isRemote)
                 {
@@ -603,11 +607,6 @@ namespace Xamarin_Android.Droid
                     // we just set a remote description
                     Console.WriteLine("Successfully set the remote description");
                 }
-                else
-                {
-                    Console.WriteLine("how'd we end up here dood");
-                }
-                
             }
         }
     }
