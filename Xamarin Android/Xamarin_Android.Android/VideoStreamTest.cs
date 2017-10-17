@@ -275,21 +275,24 @@ namespace Xamarin_Android.Droid
 
             Console.WriteLine("Received " + data.ToString());
 
-            if (data.GetValue("type").ToString().Equals("offer"))
+            bool dataType = data.GetValue("type") == null ? false : true;
+            if (dataType)
             {
-                SessionDescription sdp = new SessionDescription(SessionDescription.Type.Offer, data.GetValue("sdp").ToString());
-                CreatePeerConnection(sender);
-                isRemote = true;
-                VideoStreamTest.peerConnection.SetRemoteDescription(sdpObserver, sdp);
-                peerConnection.CreateAnswer(sdpObserver, sdpMediaConstraints);
+                if (data.GetValue("type").ToString().Equals("offer"))
+                {
+                    SessionDescription sdp = new SessionDescription(SessionDescription.Type.Offer, data.GetValue("sdp").ToString());
+                    CreatePeerConnection(sender);
+                    isRemote = true;
+                    VideoStreamTest.peerConnection.SetRemoteDescription(sdpObserver, sdp);
+                    peerConnection.CreateAnswer(sdpObserver, sdpMediaConstraints);
+                }
+                else if (data.GetValue("type").ToString().Equals("answer"))
+                {
+                    SessionDescription sdp = new SessionDescription(SessionDescription.Type.Answer, data.GetValue("sdp").ToString());
+                    isRemote = true;
+                    peerConnection.SetRemoteDescription(sdpObserver, sdp);
+                }
             }
-            else if (data.GetValue("type").ToString().Equals("answer") || data.GetValue("type").ToString().Equals("pranswer"))
-            {
-                SessionDescription sdp = new SessionDescription(SessionDescription.Type.Answer, data.GetValue("sdp").ToString());
-                isRemote = true;
-                peerConnection.SetRemoteDescription(sdpObserver, sdp);
-            }
-
             else
             {
                 // we need to add an ice candidate. (not a message)
