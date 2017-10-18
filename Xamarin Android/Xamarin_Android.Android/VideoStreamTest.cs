@@ -27,6 +27,7 @@ using static Org.Webrtc.DataChannel;
 using static Android.Opengl.GLSurfaceView;
 using Newtonsoft.Json;
 using Java.Util.Regex;
+using Java.Nio;
 
 namespace Xamarin_Android.Droid
 {
@@ -51,7 +52,7 @@ namespace Xamarin_Android.Droid
         static HttpClient client; 
 
         static VideoTrack remoteVideoTrack;
-        static SurfaceViewRenderer remoteVideoRenderer;
+        static VideoRendererWithCotnrols remoteVideoRenderer;
    
 
         MediaConstraints pcConstraints;
@@ -59,7 +60,7 @@ namespace Xamarin_Android.Droid
         //MediaConstraints audioConstraints;
         MediaStream audioMediaStream;
         MediaConstraints sdpMediaConstraints;
-        DataChannel inputChannel;
+        static DataChannel inputChannel;
 
         PeerConnection.IObserver pcObserver;
         static ISdpObserver sdpObserver;
@@ -73,6 +74,7 @@ namespace Xamarin_Android.Droid
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
+            //Stetho.initializeWithDefaults(this);
             Java.Lang.JavaSystem.LoadLibrary("jingle_peerconnection_so");
 
             SetContentView(Resource.Layout.VideoStreamTest);
@@ -114,14 +116,18 @@ namespace Xamarin_Android.Droid
 
                 JoinPeer(peer);
 
-                IEglBase eglBase = (IEglBase)EglBaseFactory.Create();
+                IEglBase eglBase = EglBaseFactory.Create();
                 var layout = new LinearLayout(this);
-                var video_view = new SurfaceViewRenderer(this);
-                layout.AddView(video_view);
-                remoteVideoRenderer = video_view;
-                EglBaseContext context = eglBase.GetEglBaseContext();
-                remoteVideoRenderer.Init(context, null);
+                //var video_view = new VideoRendererWithCotnrols(this);
+                remoteVideoRenderer = new VideoRendererWithCotnrols(this);
+                //remoteVideoRenderer = FindViewById(Resource.Id.remote_video_view);
+                //EglBaseContext context = eglBase.GetEglBaseContext();
+                remoteVideoRenderer.Init(eglBase.GetEglBaseContext(), null);
+                remoteVideoRenderer.SetEventListener(new MotionEventListener());
+                layout.AddView(remoteVideoRenderer);
                 SetContentView(layout);
+
+                //RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
 
                 //remoteVideoRenderer = FindViewById<SurfaceViewRenderer>(Resource.Id.video_view);
             };
@@ -205,6 +211,9 @@ namespace Xamarin_Android.Droid
         public void CreatePeerConnection(string peer)
         {
             /* Set this peer to the global variable to observers can access it. */
+
+            //RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
+
             peerId = peer;
 
             /* Supply the media constraints */
@@ -464,6 +473,8 @@ namespace Xamarin_Android.Droid
             public void OnDataChannel(DataChannel p0)
             {
                 Console.Write("added data channel)");
+                p0.RegisterObserver(new DcObserver());
+                inputChannel = p0;
             }
 
             public void OnIceCandidate(IceCandidate iceCand)
@@ -512,26 +523,45 @@ namespace Xamarin_Android.Droid
             }
         }
 
-        private class DcObserver : Java.Lang.Object, DataChannel.IObserver
+        private class MotionEventListener : VideoRendererWithCotnrols.IOnMotionEventListener
+        {
+            public void SendTransofrm(DataChannel.Buffer buffer)
+            {
+                if(inputChannel != null)
+                {
+                    inputChannel.Send(buffer);
+                }
+            }
+        }
+
+        private class DcObserver : Java.Lang.Object, IObserver
         {
             public void Dispose()
             {
-                throw new NotImplementedException();
+                
             }
 
             public void OnBufferedAmountChange(long p0)
             {
-                throw new NotImplementedException();
+                Console.WriteLine("Buffer Amount Changed");
             }
 
-            public void OnMessage(DataChannel.Buffer p0)
+            public void OnMessage(DataChannel.Buffer buffer)
             {
-                throw new NotImplementedException();
+                if (buffer.Binary)
+                {
+                    Console.WriteLine("Recieved binary message");
+                    return;
+                }
+                ByteBuffer data = buffer.Data;
+                byte[] bytes = new byte[data.Capacity()];
+                data.Get(bytes);
+                //string strData = new string(bytes);
             }
 
             public void OnStateChange()
             {
-                throw new NotImplementedException();
+                Console.WriteLine("State has changed");
             }
         }
 

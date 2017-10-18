@@ -62,7 +62,9 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MatrixMath.cs" />
     <Compile Include="Resources\Config.cs" />
+    <Compile Include="VideoRendererWithCotnrols.cs" />
     <Compile Include="VideoStreamTest.cs" />
     <Compile Include="Connect.cs" />
     <Compile Include="MainActivity.cs" />

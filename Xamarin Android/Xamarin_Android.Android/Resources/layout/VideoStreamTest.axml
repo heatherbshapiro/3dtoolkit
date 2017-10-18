@@ -20,7 +20,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1" />
     </LinearLayout>
-    <!--<LinearLayout
+    <LinearLayout
         android:orientation="vertical"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
@@ -29,5 +29,5 @@
             android:id="@+id/video_view"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
-    </LinearLayout>-->
+    </LinearLayout>
 </LinearLayout>
