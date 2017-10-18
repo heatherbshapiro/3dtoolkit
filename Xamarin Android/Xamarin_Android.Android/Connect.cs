@@ -17,7 +17,7 @@ namespace Xamarin_Android.Droid
 {
     class Connect
     {
-        public const string url = "http://3dtoolkit-signaling-server.azurewebsites.net";
+        public const string url = "https://3dtoolkit-signaling-server.azurewebsites.net";
         //public const string url = "http://127.0.0.1:3000";
         //public const string localName = "local";
         public string GetServerList(string clientName)

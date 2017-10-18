@@ -14,10 +14,12 @@ using static Xamarin_Android.Droid.MatrixMath;
 using Org.Webrtc;
 using System.Net.Http;
 using Java.Nio;
+using Android.Runtime;
+using Newtonsoft.Json.Linq;
 
 namespace Xamarin_Android.Droid
 {
-    class VideoRendererWithCotnrols : SurfaceViewRenderer, View.IOnTouchListener
+    class VideoRendererWithControls : SurfaceViewRenderer//, View.IOnTouchListener
     {
         float navHeading = 0;
         float navPitch = 0;
@@ -34,11 +36,11 @@ namespace Xamarin_Android.Droid
         
 
 
-        public VideoRendererWithCotnrols(Context context) : base(context)
+        public VideoRendererWithControls(Context context) : base(context)
         {
         }
 
-        public VideoRendererWithCotnrols(Context context, IAttributeSet attrs) : base(context, attrs)
+        public VideoRendererWithControls(Context context, IAttributeSet attrs) : base(context, attrs)
         {
         }
 
@@ -47,7 +49,7 @@ namespace Xamarin_Android.Droid
             mListener = eventListener;
         }
 
-        public bool OnTouch(View v, MotionEvent e)
+        public override bool OnTouchEvent(MotionEvent e)
         {
          
             
@@ -124,8 +126,12 @@ namespace Xamarin_Android.Droid
                         lookat[0] + ", " + lookat[1] + ", " + lookat[2] + ", " +
                         up[0] + ", " + up[1] + ", " + up[2];
 
-            var content = new StringContent(data, Encoding.UTF8, "camera-transform-lookat");
-            ByteBuffer byteBuffer = ByteBuffer.Wrap(Encoding.ASCII.GetBytes(content.ToString()));
+            var content = new JObject();
+            content.Add("type", "camera-transform-lookat");
+            content.Add("body", data);
+            //var content = new StringContent(data, Encoding.UTF8, "camera-transform-lookat");
+            Console.WriteLine(content.ToString(Newtonsoft.Json.Formatting.None));
+            ByteBuffer byteBuffer = ByteBuffer.Wrap(Encoding.ASCII.GetBytes(content.ToString(Newtonsoft.Json.Formatting.None)));
             DataChannel.Buffer buffer = new DataChannel.Buffer(byteBuffer, false);
             mListener.SendTransofrm(buffer);
 

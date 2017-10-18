@@ -28,6 +28,8 @@ using static Android.Opengl.GLSurfaceView;
 using Newtonsoft.Json;
 using Java.Util.Regex;
 using Java.Nio;
+using Android.Util;
+using static Xamarin_Android.Droid.MatrixMath;
 
 namespace Xamarin_Android.Droid
 {
@@ -52,8 +54,8 @@ namespace Xamarin_Android.Droid
         static HttpClient client; 
 
         static VideoTrack remoteVideoTrack;
-        static VideoRendererWithCotnrols remoteVideoRenderer;
-   
+        static VideoRendererWithControls remoteVideoRenderer;
+
 
         MediaConstraints pcConstraints;
         //MediaConstraints videoConstraints;
@@ -119,9 +121,10 @@ namespace Xamarin_Android.Droid
                 IEglBase eglBase = EglBaseFactory.Create();
                 var layout = new LinearLayout(this);
                 //var video_view = new VideoRendererWithCotnrols(this);
-                remoteVideoRenderer = new VideoRendererWithCotnrols(this);
+                remoteVideoRenderer = new VideoRendererWithControls(this);
                 //remoteVideoRenderer = FindViewById(Resource.Id.remote_video_view);
                 //EglBaseContext context = eglBase.GetEglBaseContext();
+                //remoteVideoRenderer.SetScaleGestureDetector(new ScaleGestureDetector(this, new MyScaleListener(remoteVideoRenderer)));
                 remoteVideoRenderer.Init(eglBase.GetEglBaseContext(), null);
                 remoteVideoRenderer.SetEventListener(new MotionEventListener());
                 layout.AddView(remoteVideoRenderer);
@@ -292,7 +295,7 @@ namespace Xamarin_Android.Droid
                     SessionDescription sdp = new SessionDescription(SessionDescription.Type.Offer, data.GetValue("sdp").ToString());
                     CreatePeerConnection(sender);
                     isRemote = true;
-                    VideoStreamTest.peerConnection.SetRemoteDescription(sdpObserver, sdp);
+                    peerConnection.SetRemoteDescription(sdpObserver, sdp);
                     peerConnection.CreateAnswer(sdpObserver, sdpMediaConstraints);
                 }
                 else if (data.GetValue("type").ToString().Equals("answer"))
@@ -436,6 +439,153 @@ namespace Xamarin_Android.Droid
             }, null, TimeSpan.FromSeconds(heartBeatIntervalInSecs), TimeSpan.FromSeconds(heartBeatIntervalInSecs));
         }
 
+        //public class MyScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener
+        //{
+        //    private readonly VideoRendererWithGesture _view;
+
+
+        //    public MyScaleListener(VideoRendererWithGesture view)
+        //    {
+        //        _view = view;
+        //    }
+
+        //    public override bool OnScale(ScaleGestureDetector detector)
+        //    {
+        //        var dist = detector.ScaleFactor;
+        //        _view.navLocation[0] = _view.downLocation[0] + dist * _view.navTransform[0, 0];
+        //        _view.navLocation[1] = _view.downLocation[1] + dist * _view.navTransform[0, 1];
+        //        _view.navLocation[2] = _view.downLocation[2] + dist * _view.navTransform[0, 2];
+
+        //        _view.navTransform[3, 0] = _view.navLocation[0];
+        //        _view.navTransform[3, 1] = _view.navLocation[1];
+        //        _view.navTransform[3, 2] = _view.navLocation[2];
+
+        //        _view.ToBuffer();
+
+        //        //_view._gestureOutput.Text = String.Format("{0} {1} {2} {3} \n {4} {5} {6} {7} \n {8} {9} {10} {11} \n {12} {13} {14} {15}", _view.navTransform[0, 0], _view.navTransform[0, 1], _view.navTransform[0, 2], _view.navTransform[0, 3], _view.navTransform[1, 0], _view.navTransform[1, 1], _view.navTransform[1, 2], _view.navTransform[1, 3], _view.navTransform[2, 0], _view.navTransform[2, 1], _view.navTransform[2, 2], _view.navTransform[2, 3], _view.navTransform[3, 0], _view.navTransform[3, 1], _view.navTransform[3, 2], _view.navTransform[3, 3]);
+
+        //        return true;
+        //    }
+        //}
+
+        //public class VideoRendererWithGesture : SurfaceViewRenderer//, View.IOnTouchListener
+        //{
+        //    float navHeading = 0;
+        //    float navPitch = 0;
+        //    public float[] navLocation = new float[] { 0, 0, 0 };
+        //    bool isFingerDown = false;
+        //    float fingerDownX;
+        //    float fingerDownY;
+        //    float downPitch = 0;
+        //    float downHeading = 0;
+        //    public float[] downLocation = new float[] { 0, 0, 0 };
+        //    public float[,] navTransform;
+
+        //    IOnMotionEventListener mListener;
+
+        //    ScaleGestureDetector _scaleDetector;
+
+        //    public VideoRendererWithGesture(Context context) : base(context)
+        //    {
+        //    }
+
+        //    public VideoRendererWithGesture(Context context, IAttributeSet attrs) : base(context, attrs)
+        //    {
+        //    }
+
+        //    public void SetEventListener(IOnMotionEventListener eventListener)
+        //    {
+        //        mListener = eventListener;
+        //    }
+
+        //    public void SetScaleGestureDetector(ScaleGestureDetector detector)
+        //    {
+        //        _scaleDetector = detector;
+        //    }
+
+        //    public override bool OnTouchEvent(MotionEvent e)
+        //    {
+        //        _scaleDetector.OnTouchEvent(e);
+        //        if (e.PointerCount == 1)
+        //        {
+        //            switch (e.Action)
+        //            {
+        //                case MotionEventActions.Down:
+        //                    isFingerDown = true;
+        //                    fingerDownX = e.RawX;
+        //                    fingerDownY = e.RawY;
+
+        //                    downPitch = navPitch;
+        //                    downHeading = navHeading;
+        //                    downLocation[0] = navLocation[0];
+        //                    downLocation[1] = navLocation[1];
+        //                    downLocation[2] = navLocation[2];
+
+        //                    break;
+        //                case MotionEventActions.Move:
+        //                    var dx = e.RawX - fingerDownX;
+        //                    var dy = e.RawY - fingerDownY;
+
+        //                    var dpitch = (float)0.005 * dy;
+        //                    var dheading = (float)0.005 * dx;
+
+        //                    navHeading = downHeading - dheading;
+        //                    navPitch = downPitch + dpitch;
+        //                    var localTransform = MatMultiply(MatRotateY(navHeading), MatRotateZ(navPitch));
+        //                    navTransform = MatMultiply(MatTranslate(navLocation), localTransform);
+
+        //                    ToBuffer();
+        //                    //_gestureOutput.Text = String.Format("{0} {1} {2} {3} \n {4} {5} {6} {7} \n {8} {9} {10} {11} \n {12} {13} {14} {15}", navTransform[0, 0], navTransform[0, 1], navTransform[0, 2], navTransform[0, 3], navTransform[1, 0], navTransform[1, 1], navTransform[1, 2], navTransform[1, 3], navTransform[2, 0], navTransform[2, 1], navTransform[2, 2], navTransform[2, 3], navTransform[3, 0], navTransform[3, 1], navTransform[3, 2], navTransform[3, 3]);
+        //                    break;
+        //                case MotionEventActions.Up:
+        //                    isFingerDown = false;
+        //                    break;
+        //            }
+        //        }
+        //        return true;
+        //    }
+
+        //    public void ToBuffer()
+        //    {
+        //        if (mListener == null)
+        //        {
+        //            return;
+        //        }
+        //        float[] eye = { navTransform[3, 0], navTransform[3, 1], navTransform[3, 2] };
+        //        float[] lookat = { navTransform[3, 0] + navTransform[0, 0], navTransform[3, 1] + navTransform[0, 1], navTransform[3, 2] + navTransform[0, 2] };
+        //        float[] up = { navTransform[1, 0], navTransform[1, 1], navTransform[1, 2] };
+
+        //        string data = eye[0] + ", " + eye[1] + ", " + eye[2] + ", " +
+        //                    lookat[0] + ", " + lookat[1] + ", " + lookat[2] + ", " +
+        //                    up[0] + ", " + up[1] + ", " + up[2];
+
+        //        var content = new JObject();
+        //        content.Add("type", "camera-transform-lookat");
+        //        content.Add("body", data);
+        //        //var content = new StringContent(data, Encoding.UTF8, "camera-transform-lookat");
+        //        Console.WriteLine(content.ToString(Newtonsoft.Json.Formatting.None));
+        //        ByteBuffer byteBuffer = ByteBuffer.Wrap(Encoding.ASCII.GetBytes(content.ToString()));
+        //        DataChannel.Buffer buffer = new DataChannel.Buffer(byteBuffer, false);
+        //        mListener.SendTransofrm(buffer);
+
+        //    }
+
+        //    public interface IOnMotionEventListener
+        //    {
+        //        void SendTransofrm(DataChannel.Buffer server);
+        //    }
+        //}
+
+        private class MotionEventListener : VideoRendererWithControls.IOnMotionEventListener
+        {
+            public void SendTransofrm(DataChannel.Buffer buffer)
+            {
+                if (inputChannel != null)
+                {
+                    inputChannel.Send(buffer);
+                }
+            }
+        }
 
         private class PeerObserver : Java.Lang.Object, PeerConnection.IObserver
         {
@@ -520,17 +670,6 @@ namespace Xamarin_Android.Droid
             public void OnSignalingChange(PeerConnection.SignalingState p0)
             {
                 Console.WriteLine(p0.ToString());
-            }
-        }
-
-        private class MotionEventListener : VideoRendererWithCotnrols.IOnMotionEventListener
-        {
-            public void SendTransofrm(DataChannel.Buffer buffer)
-            {
-                if(inputChannel != null)
-                {
-                    inputChannel.Send(buffer);
-                }
             }
         }
 
