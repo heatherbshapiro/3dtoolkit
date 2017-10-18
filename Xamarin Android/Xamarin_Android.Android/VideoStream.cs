@@ -34,7 +34,7 @@ using static Xamarin_Android.Droid.MatrixMath;
 namespace Xamarin_Android.Droid
 {
     [Activity(Label = "VideoStreamTest")]
-    public class VideoStreamTest : Activity
+    public class VideoStream : Activity
     {
         public const string url = "https://3dtoolkit-signaling-server.azurewebsites.net";
 
@@ -79,7 +79,7 @@ namespace Xamarin_Android.Droid
             //Stetho.initializeWithDefaults(this);
             Java.Lang.JavaSystem.LoadLibrary("jingle_peerconnection_so");
 
-            SetContentView(Resource.Layout.VideoStreamTest);
+            SetContentView(Resource.Layout.VideoStream);
 
             //var eglBase = Java.Lang.Class.ForName("microsoft.a3dtoolkitandroid.util").NewInstance();
 
@@ -104,7 +104,7 @@ namespace Xamarin_Android.Droid
             }
 
             serverList = FindViewById<ListView>(Resource.Id.server_list);
-            adapter = new ArrayAdapter<string>(this, Resource.Layout.VideoStreamTest, Resource.Id.textItem, servers);
+            adapter = new ArrayAdapter<string>(this, Resource.Layout.VideoStream, Resource.Id.textItem, servers);
             serverList.Adapter = adapter;
 
             BeginProcess();

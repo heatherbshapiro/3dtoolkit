@@ -66,7 +66,7 @@
     <Compile Include="MatrixMath.cs" />
     <Compile Include="Resources\Config.cs" />
     <Compile Include="VideoRendererWithControls.cs" />
-    <Compile Include="VideoStreamTest.cs" />
+    <Compile Include="VideoStream.cs" />
     <Compile Include="Connect.cs" />
     <Compile Include="MainActivity.cs" />
     <Compile Include="Resources\Resource.designer.cs" />
@@ -83,7 +83,7 @@
     <AndroidResource Include="Resources\layout\ServerList.axml">
       <SubType>Designer</SubType>
     </AndroidResource>
-    <AndroidResource Include="Resources\layout\VideoStreamTest.axml">
+    <AndroidResource Include="Resources\layout\VideoStream.axml">
       <SubType>Designer</SubType>
     </AndroidResource>
     <AndroidResource Include="Resources\layout\GestureTest.axml" />

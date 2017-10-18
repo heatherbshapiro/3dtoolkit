@@ -37,7 +37,7 @@ namespace Xamarin_Android.Droid
 
                 string peerId = servers[args.Position].ToString().Split(',')[1];
                 Console.WriteLine("peerid + " + peerId);
-                Intent intent = new Intent(this, typeof(VideoStreamTest));
+                Intent intent = new Intent(this, typeof(VideoStream));
                 intent.PutExtra("sender", peerId);
                 StartActivity(intent);
             };

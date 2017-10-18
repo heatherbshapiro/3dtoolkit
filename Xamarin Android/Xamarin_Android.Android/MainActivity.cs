@@ -34,7 +34,7 @@ namespace Xamarin_Android.Droid
                 string content = connect.GetServerList(nameText.Text);
                 int myId = Int32.Parse(content.ToString().Split(',')[1]);
 
-                Intent intent = new Intent(this, typeof(VideoStreamTest));
+                Intent intent = new Intent(this, typeof(VideoStream));
                 intent.PutExtra("serverUrl", text.Text);
                 intent.PutExtra("server_list", content);
                 intent.PutExtra("myId", myId.ToString());

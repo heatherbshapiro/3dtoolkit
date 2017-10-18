@@ -107,7 +107,7 @@ namespace Xamarin_Android.Droid
 			public const int ServerList = 2130903042;
 			
 			// aapt resource value: 0x7f030003
-			public const int VideoStreamTest = 2130903043;
+			public const int VideoStream = 2130903043;
 			
 			static Layout()
 			{
