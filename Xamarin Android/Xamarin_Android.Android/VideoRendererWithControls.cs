@@ -24,7 +24,7 @@ namespace Xamarin_Android.Droid
         float navHeading = 0;
         float navPitch = 0;
         float[] navLocation = new float[] { 0, 0, 0 };
-        bool isFingerDown = false;
+        bool isFirstDown = false;
         float fingerDownX;
         float fingerDownY;
         float downPitch = 0;
@@ -33,7 +33,21 @@ namespace Xamarin_Android.Droid
         float[,] navTransform;
         //private OnMotionEventListener mListener;
         IOnMotionEventListener mListener;
-        
+        float dx;
+        float dy;
+        float scaleFactor;
+        float zoomFingerDownX;
+        float zoomFingerDownY;
+
+        Mode mode = Mode.NONE;
+
+        enum Mode
+        {
+            DRAG,
+            ZOOM,
+            NONE
+        };
+
 
 
         public VideoRendererWithControls(Context context) : base(context)
@@ -51,66 +65,98 @@ namespace Xamarin_Android.Droid
 
         public override bool OnTouchEvent(MotionEvent e)
         {
-         
-            
-                switch (e.Action)
+            if (mListener == null)
+            {
+                return false;
+            }
+
+            int pointerCount = e.PointerCount;
+            MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
+
+            switch (e.Action & MotionEventActions.Mask)
+            {
+                case MotionEventActions.Down:
+                    mode = Mode.DRAG;
+                    dx = 0;
+                    dy = 0;
+
+                    fingerDownX = e.RawX;
+                    fingerDownY = e.RawY;
+
+                    downPitch = navPitch;
+                    downHeading = navHeading;
+                    downLocation[0] = navLocation[0];
+                    downLocation[1] = navLocation[1];
+                    downLocation[2] = navLocation[2];
+
+                    break;
+                case MotionEventActions.Move:
+                    if (mode == Mode.DRAG)
+                    {
+                        dx = e.RawX - fingerDownX;
+                        dy = e.RawY - fingerDownY;
+
+                    }
+                    else if (mode == Mode.ZOOM)
+                    {
+                        e.GetPointerCoords(1, pointerCoords);
+                        scaleFactor = pointerCoords.Y - zoomFingerDownY;
+                    }
+                    break;
+                case MotionEventActions.PointerDown:
+                    mode = Mode.ZOOM;
+                    e.GetPointerCoords(1, pointerCoords);
+                    zoomFingerDownY = pointerCoords.Y;
+                    isFirstDown = true;
+                    break;
+
+                case MotionEventActions.Up:
+                    mode = Mode.NONE;
+                    break;
+                case MotionEventActions.PointerUp:
+                    mode = Mode.NONE;
+                    break;
+            }
+
+            if (mode == Mode.DRAG && (Math.Abs(dx) + Math.Abs(dy) > 20))
+            {
+                var dpitch = (float)0.005 * dy;
+                var dheading = (float)0.005 * dx;
+
+                navHeading = downHeading + dheading;
+                navPitch = downPitch - dpitch;
+                var localTransform = MatMultiply(MatRotateY(navHeading), MatRotateZ(navPitch));
+                navTransform = MatMultiply(MatTranslate(navLocation), localTransform);
+
+                ToBuffer();
+            }
+            else if (mode == Mode.ZOOM && Math.Abs(scaleFactor) > 10)
+            {
+                //MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
+                //e.GetPointerCoords(1, pointerCoords);
+
+                //float dy = pointerCoords.Y - fingerDownY;
+
+                if (isFirstDown)
                 {
-                    case MotionEventActions.Down:
-                        isFingerDown = true;
-                        fingerDownX = e.RawX;
-                        fingerDownY = e.RawY;
-
-                        downPitch = navPitch;
-                        downHeading = navHeading;
-                        downLocation[0] = navLocation[0];
-                        downLocation[1] = navLocation[1];
-                        downLocation[2] = navLocation[2];
-
-                        break;
-                    case MotionEventActions.Move:
-                        if (isFingerDown)
-                        {
-                            if (e.PointerCount == 1)
-                                {
-                                var dx = e.RawX - fingerDownX;
-                                var dy = e.RawY - fingerDownY;
-
-                                var dpitch = (float)0.005 * dy;
-                                var dheading = (float)0.005 * dx;
-
-                                navHeading = downHeading - dheading;
-                                navPitch = downPitch + dpitch;
-                                var localTransform = MatMultiply(MatRotateY(navHeading), MatRotateZ(navPitch));
-                                navTransform = MatMultiply(MatTranslate(navLocation), localTransform);
-
-                                ToBuffer();
-                            } else if (e.PointerCount == 2){
-                                MotionEvent.PointerCoords pointerCoords = new MotionEvent.PointerCoords();
-                                e.GetPointerCoords(1, pointerCoords);
-
-                                float dy = pointerCoords.Y - fingerDownY;
-
-                                float dist = -dy;
-
-                                navLocation[0] = downLocation[0] + dist * navTransform[0, 0];
-                                navLocation[1] = downLocation[1] + dist * navTransform[0, 1];
-                                navLocation[2] = downLocation[2] + dist * navTransform[0, 2];
-
-                                navTransform[3, 0] = navLocation[0];
-                                navTransform[3, 1] = navLocation[1];
-                                navTransform[3, 2] = navLocation[2];
-
-                                ToBuffer();
-                            }
-                        }
-                        break;
-                    case MotionEventActions.Up:
-                        isFingerDown = false;
-                        break;
+                    isFirstDown = false;
+                    return true;
                 }
-             
+
+                float dist = -0.3f * scaleFactor;//-dy;
+
+                navLocation[0] = downLocation[0] + dist * navTransform[0, 0];
+                navLocation[1] = downLocation[1] + dist * navTransform[0, 1];
+                navLocation[2] = downLocation[2] + dist * navTransform[0, 2];
+
+                navTransform[3, 0] = navLocation[0];
+                navTransform[3, 1] = navLocation[1];
+                navTransform[3, 2] = navLocation[2];
+
+                ToBuffer();
+            }             
             return true;
-        }
+        } 
 
         private void ToBuffer()
         {

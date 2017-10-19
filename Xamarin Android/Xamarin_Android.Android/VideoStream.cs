@@ -33,7 +33,7 @@ using static Xamarin_Android.Droid.MatrixMath;
 
 namespace Xamarin_Android.Droid
 {
-    [Activity(Label = "VideoStreamTest")]
+    [Activity(Label = "Connect to Stream", ScreenOrientation = Android.Content.PM.ScreenOrientation.Landscape)]
     public class VideoStream : Activity
     {
         public const string url = "https://3dtoolkit-signaling-server.azurewebsites.net";
@@ -77,7 +77,9 @@ namespace Xamarin_Android.Droid
         {
             base.OnCreate(savedInstanceState);
             //Stetho.initializeWithDefaults(this);
-            Java.Lang.JavaSystem.LoadLibrary("jingle_peerconnection_so");
+            //Java.Lang.JavaSystem.LoadLibrary("jingle_peerconnection_so");
+            //RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
+            RequestWindowFeature(WindowFeatures.NoTitle);
 
             SetContentView(Resource.Layout.VideoStream);
 
@@ -106,17 +108,21 @@ namespace Xamarin_Android.Droid
             serverList = FindViewById<ListView>(Resource.Id.server_list);
             adapter = new ArrayAdapter<string>(this, Resource.Layout.VideoStream, Resource.Id.textItem, servers);
             serverList.Adapter = adapter;
+            
+
 
             BeginProcess();
 
             serverList.ItemClick += delegate (object sender, AdapterView.ItemClickEventArgs args)
             {
+                //RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
                 string clicked = servers[args.Position].ToString();
                 string peer = servers[args.Position].Split(',')[1];
                 string serverName = servers[args.Position].Split(',')[0];
                 Console.WriteLine("peername: " + serverName);
 
                 JoinPeer(peer);
+                
 
                 IEglBase eglBase = EglBaseFactory.Create();
                 var layout = new LinearLayout(this);
@@ -127,10 +133,15 @@ namespace Xamarin_Android.Droid
                 //remoteVideoRenderer.SetScaleGestureDetector(new ScaleGestureDetector(this, new MyScaleListener(remoteVideoRenderer)));
                 remoteVideoRenderer.Init(eglBase.GetEglBaseContext(), null);
                 remoteVideoRenderer.SetEventListener(new MotionEventListener());
+                Window.AddFlags(WindowManagerFlags.DismissKeyguard | WindowManagerFlags.TurnScreenOn | WindowManagerFlags.ShowWhenLocked );
+
+                remoteVideoRenderer.SystemUiVisibility = (StatusBarVisibility)SystemUiFlags.HideNavigation | (StatusBarVisibility)SystemUiFlags.Fullscreen | (StatusBarVisibility)SystemUiFlags.ImmersiveSticky;
                 layout.AddView(remoteVideoRenderer);
                 SetContentView(layout);
 
+
                 //RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
+                
 
                 //remoteVideoRenderer = FindViewById<SurfaceViewRenderer>(Resource.Id.video_view);
             };

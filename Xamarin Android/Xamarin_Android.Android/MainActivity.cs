@@ -12,15 +12,16 @@ using System.Collections.Generic;
 
 namespace Xamarin_Android.Droid
 {
-	[Activity (Label = "Xamarin_Android.Android", MainLauncher = true, Icon = "@drawable/icon")]
-	public class MainActivity : Activity
+	[Activity (Label = "3D Toolkit Login", MainLauncher = true, Icon = "@drawable/icon", ScreenOrientation = Android.Content.PM.ScreenOrientation.Landscape)]
+    public class MainActivity : Activity
 	{
 		protected override void OnCreate (Bundle bundle)
 		{
 			base.OnCreate (bundle);
+            RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
 
-			// Set our view from the "main" layout resource
-			SetContentView (Resource.Layout.Main);
+            // Set our view from the "main" layout resource
+            SetContentView (Resource.Layout.Main);
 
 			// Get our button from the layout resource,
 			// and attach an event to it
