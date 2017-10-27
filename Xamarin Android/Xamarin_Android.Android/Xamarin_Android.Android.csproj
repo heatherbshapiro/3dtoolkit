@@ -62,7 +62,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GestureTest.cs" />
     <Compile Include="MatrixMath.cs" />
     <Compile Include="Resources\Config.cs" />
     <Compile Include="VideoRendererWithControls.cs" />
@@ -86,7 +85,6 @@
     <AndroidResource Include="Resources\layout\VideoStream.axml">
       <SubType>Designer</SubType>
     </AndroidResource>
-    <AndroidResource Include="Resources\layout\GestureTest.axml" />
   </ItemGroup>
   <ItemGroup>
     <AndroidResource Include="Resources\layout\Main.axml">
