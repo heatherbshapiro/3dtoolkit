@@ -73,6 +73,12 @@ namespace Xamarin_Android.Droid
         static bool isLocal;
         static bool isRemote;
 
+        public override void OnBackPressed()
+        {
+            Disconnect();
+            base.OnBackPressed();
+        }
+
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
@@ -95,6 +101,7 @@ namespace Xamarin_Android.Droid
             myId = servers[0].Split(',')[1];
             Console.Write("MYID     " + myId.ToString());
             servers.RemoveAt(0);
+            servers.RemoveAt(server.Count()-2);
 
             for (int i=0; i<servers.Count; i++)
             {
@@ -106,7 +113,7 @@ namespace Xamarin_Android.Droid
             }
 
             serverList = FindViewById<ListView>(Resource.Id.server_list);
-            adapter = new ArrayAdapter<string>(this, Resource.Layout.VideoStream, Resource.Id.textItem, servers);
+            adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1, servers);// Resource.Layout.VideoStream, Resource.Id.textItem, servers);
             serverList.Adapter = adapter;
             
 

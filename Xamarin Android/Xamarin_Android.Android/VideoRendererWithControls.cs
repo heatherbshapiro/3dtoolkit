@@ -48,8 +48,6 @@ namespace Xamarin_Android.Droid
             NONE
         };
 
-
-
         public VideoRendererWithControls(Context context) : base(context)
         {
         }
