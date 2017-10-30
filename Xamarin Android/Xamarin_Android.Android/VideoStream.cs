@@ -24,54 +24,76 @@ using Android.Graphics;
 using Android.Hardware.Display;
 using Android.Media.Projection;
 using static Org.Webrtc.DataChannel;
-using static Android.Opengl.GLSurfaceView;
 using Newtonsoft.Json;
 using Java.Util.Regex;
-using Java.Nio;
-using Android.Util;
+
+using Xamarin_Android.Droid.Resources;
 using static Xamarin_Android.Droid.MatrixMath;
+using Java.Nio;
 
 namespace Xamarin_Android.Droid
 {
     [Activity(Label = "Connect to Stream", ScreenOrientation = Android.Content.PM.ScreenOrientation.Landscape)]
     public class VideoStream : Activity
     {
-        public const string url = "https://3dtoolkit-signaling-server.azurewebsites.net";
-
+        static string serverUrl;
         static PeerConnection peerConnection;
         PeerConnectionFactory pcFactory;
-        static string myId;
         List<string> servers;
-        Dictionary<string, string> otherPeers = new Dictionary<string, string>();
         ListView serverList;
-
+        static string myId = "-1";
         static string peerId;
+        static bool isInitiator;
+        static SessionDescription localSdp;
 
         int heartBeatIntervalInSecs = 5;
         System.Threading.Timer timer;
-        int messageCounter;
 
-        static HttpClient client; 
-
+        static HttpClient client;
         static VideoTrack remoteVideoTrack;
         static VideoRendererWithControls remoteVideoRenderer;
-
-
         MediaConstraints pcConstraints;
-        //MediaConstraints videoConstraints;
-        //MediaConstraints audioConstraints;
-        MediaStream audioMediaStream;
         MediaConstraints sdpMediaConstraints;
         static DataChannel inputChannel;
-
         PeerConnection.IObserver pcObserver;
-        static ISdpObserver sdpObserver;
+        static ISdpObserver sdpObserver = new SDPObserver();
 
         ArrayAdapter<string> adapter;
+        IEglBase eglBase;
 
-        static bool isInitiator;
-        static bool isLocal;
-        static bool isRemote;
+        protected override void OnCreate(Bundle savedInstanceState)
+        {
+            base.OnCreate(savedInstanceState);
+            
+            RequestWindowFeature(WindowFeatures.NoTitle);
+
+            SetContentView(Resource.Layout.VideoStream);
+
+            string connectedServers = Intent.GetStringExtra("serverList");
+            serverUrl = Intent.GetStringExtra("serverUrl");
+
+            string[] server = connectedServers.Split();
+            servers = server.ToList();
+            myId = servers[0].Split(',')[1];
+            servers.RemoveAt(0);
+            servers.RemoveAt(server.Count()-2);
+            serverList = FindViewById<ListView>(Resource.Id.server_list);
+            adapter = new ArrayAdapter<string>(this, Resource.Layout.VideoStream, Resource.Id.textItem, servers);
+            serverList.Adapter = adapter;
+            Button disconnectButton;
+            BeginProcess();
+
+            serverList.ItemClick += delegate (object sender, AdapterView.ItemClickEventArgs args)
+            {
+                string clicked = servers[args.Position].ToString();
+                string peer = servers[args.Position].Split(',')[1];
+                string serverName = servers[args.Position].Split(',')[0];
+                Console.WriteLine("peername: " + serverName);
+
+                JoinPeer(peer);
+              
+            };
+        }
 
         public override void OnBackPressed()
         {
@@ -79,89 +101,16 @@ namespace Xamarin_Android.Droid
             base.OnBackPressed();
         }
 
-        protected override void OnCreate(Bundle savedInstanceState)
-        {
-            base.OnCreate(savedInstanceState);
-            //Stetho.initializeWithDefaults(this);
-            //Java.Lang.JavaSystem.LoadLibrary("jingle_peerconnection_so");
-            //RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
-            RequestWindowFeature(WindowFeatures.NoTitle);
-
-            SetContentView(Resource.Layout.VideoStream);
-
-            //var eglBase = Java.Lang.Class.ForName("microsoft.a3dtoolkitandroid.util").NewInstance();
-
-            /* TO DO: Initialize Video Tracks/Renderin. Errors with SurfaceViewRenderer */
-
-            /* Grab server list and create view */
-            string ServerList = Intent.GetStringExtra("server_list");
-
-            string[] server = ServerList.Split();
-            servers = server.ToList();
-            myId = servers[0].Split(',')[1];
-            Console.Write("MYID     " + myId.ToString());
-            servers.RemoveAt(0);
-            servers.RemoveAt(server.Count()-2);
-
-            for (int i=0; i<servers.Count; i++)
-            {
-                if (servers[i].Length > 0)
-                {
-                    string[] info = servers[i].Split(',');
-                    otherPeers.Add(info[1], info[0]);
-                }
-            }
-
-            serverList = FindViewById<ListView>(Resource.Id.server_list);
-            adapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1, servers);// Resource.Layout.VideoStream, Resource.Id.textItem, servers);
-            serverList.Adapter = adapter;
-            
-
-
-            BeginProcess();
-
-            serverList.ItemClick += delegate (object sender, AdapterView.ItemClickEventArgs args)
-            {
-                //RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
-                string clicked = servers[args.Position].ToString();
-                string peer = servers[args.Position].Split(',')[1];
-                string serverName = servers[args.Position].Split(',')[0];
-                Console.WriteLine("peername: " + serverName);
-
-                JoinPeer(peer);
-                
-
-                IEglBase eglBase = EglBaseFactory.Create();
-                var layout = new LinearLayout(this);
-                //var video_view = new VideoRendererWithCotnrols(this);
-                remoteVideoRenderer = new VideoRendererWithControls(this);
-                //remoteVideoRenderer = FindViewById(Resource.Id.remote_video_view);
-                //EglBaseContext context = eglBase.GetEglBaseContext();
-                //remoteVideoRenderer.SetScaleGestureDetector(new ScaleGestureDetector(this, new MyScaleListener(remoteVideoRenderer)));
-                remoteVideoRenderer.Init(eglBase.GetEglBaseContext(), null);
-                remoteVideoRenderer.SetEventListener(new MotionEventListener());
-                Window.AddFlags(WindowManagerFlags.DismissKeyguard | WindowManagerFlags.TurnScreenOn | WindowManagerFlags.ShowWhenLocked );
-
-                remoteVideoRenderer.SystemUiVisibility = (StatusBarVisibility)SystemUiFlags.HideNavigation | (StatusBarVisibility)SystemUiFlags.Fullscreen | (StatusBarVisibility)SystemUiFlags.ImmersiveSticky;
-                layout.AddView(remoteVideoRenderer);
-                SetContentView(layout);
-
-
-                //RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
-                
-
-                //remoteVideoRenderer = FindViewById<SurfaceViewRenderer>(Resource.Id.video_view);
-            };
-        }
-
         protected void BeginProcess()
         {
             StartHangingGet();
-            Console.Write("IM DONE THIS TASK");
-            StartHeartBeat();
+            StartHeartbeat();
             //UpdatePeerList(); 
         }
 
+        /*
+         * Disconnects the current PeerConnection and ends the activity. 
+         */
         public void Disconnect()
         {
             // Stop the heartbeat
@@ -180,15 +129,11 @@ namespace Xamarin_Android.Droid
                 pcFactory.Dispose();
                 pcFactory = null;
             }
-            // CLOSE OUT RENDERER, EGL BASE WHEN CREATED. 
-
-            PeerConnectionFactory.StopInternalTracingCapture();
-            PeerConnectionFactory.ShutdownInternalTracer();
 
             if (myId != "-1")
             {
                 //Tell the server we are signing out
-                var req = new HttpWebRequest(new Uri(url + "/sign_out?peer_id=" + myId));
+                var req = new HttpWebRequest(new Uri(serverUrl + "/sign_out?peer_id=" + myId));
                 req.Method = "GET";
                 req.Headers["Peer-Type"] = "Client";
 
@@ -214,27 +159,45 @@ namespace Xamarin_Android.Droid
 
                 myId = "-1";
             }
+
+            if (eglBase != null)
+            {
+                try
+                {
+                    eglBase.Release();
+                }
+                catch (RuntimeException e)
+                {
+                    Console.Write(e.ToString());
+                }
+            }
+
+            PeerConnectionFactory.StopInternalTracingCapture();
+            PeerConnectionFactory.ShutdownInternalTracer();
+            Finish();
         }
 
+        /*
+         * Joins server selected from the list of peers
+         * @param peer: string representing the server selected. 
+         */
         public void JoinPeer(string peer)
         {
             CreatePeerConnection(peer);
-
             inputChannel = peerConnection.CreateDataChannel("inputDataChannel", new DataChannel.Init());
             inputChannel.RegisterObserver(new DcObserver());
-
-            sdpObserver = new SDPObserver();
 
             isInitiator = true;
             peerConnection.CreateOffer(sdpObserver, sdpMediaConstraints);
         }
 
+        /*
+         * Create a PeerConnection
+         * @param peer: given peer to create connection with.
+         */
         public void CreatePeerConnection(string peer)
         {
             /* Set this peer to the global variable to observers can access it. */
-
-            //RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
-
             peerId = peer;
 
             /* Supply the media constraints */
@@ -243,15 +206,12 @@ namespace Xamarin_Android.Droid
             pcConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "false"));
             pcConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
 
-            // ARE AUDIO AND SDPMEDIA CONSTRAINTS NECESSARY? 
-            // audioConstraints = new MediaConstraints();
-
             sdpMediaConstraints = new MediaConstraints();
             sdpMediaConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveAudio", "false"));
             sdpMediaConstraints.Mandatory.Add(new MediaConstraints.KeyValuePair("OfferToReceiveVideo", "true"));
 
             /* Create the Ice Server */
-            PeerConnection.IceServer ice = new PeerConnection.IceServer("turn:turnserver3dstreaming.centralus.cloudapp.azure.com:5349", "user", "3Dtoolkit072017", PeerConnection.TlsCertPolicy.TlsCertPolicyInsecureNoCheck);
+            PeerConnection.IceServer ice = new PeerConnection.IceServer(Config.turnServer, Config.username, Config.credential, Config.tlsCertPolicy);
             List<PeerConnection.IceServer> iceServers = new List<PeerConnection.IceServer> { ice };
             PeerConnection.RTCConfiguration rtcConfig = new PeerConnection.RTCConfiguration(iceServers);
             rtcConfig.IceTransportsType = PeerConnection.IceTransportsType.Relay;
@@ -263,15 +223,39 @@ namespace Xamarin_Android.Droid
             PeerConnectionFactory.InitializeAndroidGlobals(this, false, true, true);
 
             pcFactory = new PeerConnectionFactory();
+            IEglBase eglBase = EglBaseFactory.Create();
+            Button disconnectButton;
+            disconnectButton = new Button(this)
+            {
+                Text = "Disconnect"
+            };
+            disconnectButton.Click += delegate (object s, EventArgs e)
+            {
+                Disconnect();
+            };
+
+            var layout = new RelativeLayout(this);
+            remoteVideoRenderer = new VideoRendererWithControls(this);
+            remoteVideoRenderer.Init(eglBase.GetEglBaseContext(), null);
+            remoteVideoRenderer.SetEventListener(new MotionEventListener());
+            Window.AddFlags(WindowManagerFlags.DismissKeyguard | WindowManagerFlags.TurnScreenOn | WindowManagerFlags.ShowWhenLocked);
+            remoteVideoRenderer.SystemUiVisibility = (StatusBarVisibility)SystemUiFlags.HideNavigation | (StatusBarVisibility)SystemUiFlags.Fullscreen | (StatusBarVisibility)SystemUiFlags.ImmersiveSticky;
+            layout.AddView(remoteVideoRenderer);
+            layout.AddView(disconnectButton);
+            SetContentView(layout);
 
             /* Establish peer connection */
-
             peerConnection = pcFactory.CreatePeerConnection(rtcConfig, pcConstraints, pcObserver);
-            Console.Write("createPeerConnection: PeerConnection = " + peerConnection.ToString());
         }
 
+        /*
+         * Sends POST request to the server with data
+         * @param data: content for message to send to peer
+         * @param peer: peer to send message to
+         */
         static async Task SendToPeer(string peer, Dictionary<string, string> data)
         {
+
             if (myId == "-1")
             {
                 Console.Write("SendToPeer Not Connected");
@@ -279,7 +263,7 @@ namespace Xamarin_Android.Droid
             }
             if (peer == myId)
             {
-                Console.Write("SendToPeer Can't send a message to yoself !");
+                Console.Write("SendToPeer Can't send a message to yoself!");
                 return;
             }
 
@@ -289,21 +273,32 @@ namespace Xamarin_Android.Droid
             JObject dataToSend = JObject.Parse(json);
             var content = new StringContent(json, Encoding.UTF8, "text/plain");
             content.Headers.Add("Peer-Type", "Client");
-            var req = new Uri(url + "/message?peer_id=" + myId + "&to=" + peer);
+            var req = new Uri(serverUrl + "/message?peer_id=" + myId + "&to=" + peer);
             HttpResponseMessage response = null;
             response = await client.PostAsync(req, content);
             if (response.IsSuccessStatusCode)
             {
                 Console.WriteLine("Successfully sent message to peer: {0}", response.Content.ToString());
             }
+            else
+            {
+                Console.Write("RESPONSE FROM SENT MESSAGE: " + response.StatusCode + "   " + response.ReasonPhrase);
+                Console.Write("this is the request message" + response.RequestMessage);
+                string x = await content.ReadAsStringAsync();
+                Console.Write("this was the content" + x);
+            }
         }
 
+
+        /*
+         * Handles message from the server: offer, answer, or adding ice candidate.
+         * 
+         * @param data is the JSON response from the server
+         * @sender is the peer that sent the message
+         */
         public void HandlePeerMessage(string sender, JObject data)
         {
-            messageCounter += 1;
-            string str = "Message from " + otherPeers.GetValueOrDefault(sender) + ":" + data.ToString();
-
-            Console.WriteLine("Received " + data.ToString());
+            Console.WriteLine("Received: " + data.ToString());
 
             bool dataType = data.GetValue("type") == null ? false : true;
             if (dataType)
@@ -312,28 +307,31 @@ namespace Xamarin_Android.Droid
                 {
                     SessionDescription sdp = new SessionDescription(SessionDescription.Type.Offer, data.GetValue("sdp").ToString());
                     CreatePeerConnection(sender);
-                    isRemote = true;
+                    isInitiator = false;
                     peerConnection.SetRemoteDescription(sdpObserver, sdp);
                     peerConnection.CreateAnswer(sdpObserver, sdpMediaConstraints);
                 }
                 else if (data.GetValue("type").ToString().Equals("answer"))
                 {
                     SessionDescription sdp = new SessionDescription(SessionDescription.Type.Answer, data.GetValue("sdp").ToString());
-                    isRemote = true;
+                    Console.Write("Got answer");
                     peerConnection.SetRemoteDescription(sdpObserver, sdp);
                 }
             }
             else
             {
-                // we need to add an ice candidate. (not a message)
                 string iceSdp = (string)data.SelectToken("candidate");
                 string sdpMid = (string)data.SelectToken("sdpMid");
                 int sdpMidLineIndex = Int32.Parse((string)data.SelectToken("sdpMLineIndex"));
                 IceCandidate newCandidate = new IceCandidate(sdpMid, sdpMidLineIndex, iceSdp);
+                Console.Write("Adding ICE candiate " + newCandidate.ToString());
                 peerConnection.AddIceCandidate(newCandidate);
             }
         }
 
+        /** 
+         * Updates the list view with updated server list. 
+         */
         private void UpdatePeerList()
         {
             try
@@ -352,21 +350,30 @@ namespace Xamarin_Android.Droid
             }
         }
 
+        /**
+         * Handles adding new servers to the list of servers
+         * @param: newly available peer's server returned from polling.
+         */
         public void HandleServerNotification(string server)
         {
             string[] info = server.Trim().Split(',');
             if (Int32.Parse(info[2]) != 0)
             {
                 servers.Add(server);
-                otherPeers.Add(info[1], info[0]);
             }
             UpdatePeerList();
         }
 
+        /**
+         * Handles two cases:
+         * 1) When a new server appears and should be added to the list of servers.
+         * 2) When the peer sends a message: offer, answer, or ice candidate. 
+         * This loops on request timeout. 
+         */
         private async Task StartHangingGet()
         {
             // Create an HTTP web request using the URL:
-            Uri urlString = new Uri(url + "/wait?peer_id=" + myId);
+            Uri urlString = new Uri(serverUrl + "/wait?peer_id=" + myId);
             HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create(urlString);
             request.Method = "GET";
             request.Headers["Peer-Type"] = "Client";
@@ -385,9 +392,17 @@ namespace Xamarin_Android.Droid
                         HangingGetCallback(response);
                     }
                 }
+                catch (WebException err)
+                {
+                    if (err.Status == WebExceptionStatus.Timeout)
+                    {
+                        StartHangingGet();
+                    }
+                    Console.WriteLine("Error" + err);
+                }
                 catch (System.Exception e)
                 {
-                    Console.WriteLine("SERVER ERROR +  " + e);
+                    Console.WriteLine("Server Error +  " + e);
                 }
             }
         }
@@ -423,12 +438,15 @@ namespace Xamarin_Android.Droid
 
         }
 
-        public void StartHeartBeat()
+        /**
+         * Sends heartbeat request to server at a regular interval. 
+         */
+        public void StartHeartbeat()
         {
             timer = new System.Threading.Timer((e) =>
             {
 
-                var req = new HttpWebRequest(new Uri(url + "/heartbeat?peer_id=" + myId));
+                var req = new HttpWebRequest(new Uri(serverUrl + "/heartbeat?peer_id=" + myId));
                 req.ContentType = "application/json";
                 req.Method = "GET";
                 req.Headers["Peer-Type"] = "Client";
@@ -444,11 +462,11 @@ namespace Xamarin_Android.Droid
                         var content = reader.ReadToEnd();
                         if (string.IsNullOrWhiteSpace(content))
                         {
-                            Console.Out.WriteLine("TESTTTTT Response contained empty body...");
+                            Console.Out.WriteLine("Heartbeat esponse contained empty body...");
                         }
                         else
                         {
-                            Console.WriteLine("Response TESTTTTT: \r\n {0}", content);
+                            Console.WriteLine("Heartbeat: \r\n {0}", content);
                         }
 
 
@@ -456,143 +474,6 @@ namespace Xamarin_Android.Droid
                 }
             }, null, TimeSpan.FromSeconds(heartBeatIntervalInSecs), TimeSpan.FromSeconds(heartBeatIntervalInSecs));
         }
-
-        //public class MyScaleListener : ScaleGestureDetector.SimpleOnScaleGestureListener
-        //{
-        //    private readonly VideoRendererWithGesture _view;
-
-
-        //    public MyScaleListener(VideoRendererWithGesture view)
-        //    {
-        //        _view = view;
-        //    }
-
-        //    public override bool OnScale(ScaleGestureDetector detector)
-        //    {
-        //        var dist = detector.ScaleFactor;
-        //        _view.navLocation[0] = _view.downLocation[0] + dist * _view.navTransform[0, 0];
-        //        _view.navLocation[1] = _view.downLocation[1] + dist * _view.navTransform[0, 1];
-        //        _view.navLocation[2] = _view.downLocation[2] + dist * _view.navTransform[0, 2];
-
-        //        _view.navTransform[3, 0] = _view.navLocation[0];
-        //        _view.navTransform[3, 1] = _view.navLocation[1];
-        //        _view.navTransform[3, 2] = _view.navLocation[2];
-
-        //        _view.ToBuffer();
-
-        //        //_view._gestureOutput.Text = String.Format("{0} {1} {2} {3} \n {4} {5} {6} {7} \n {8} {9} {10} {11} \n {12} {13} {14} {15}", _view.navTransform[0, 0], _view.navTransform[0, 1], _view.navTransform[0, 2], _view.navTransform[0, 3], _view.navTransform[1, 0], _view.navTransform[1, 1], _view.navTransform[1, 2], _view.navTransform[1, 3], _view.navTransform[2, 0], _view.navTransform[2, 1], _view.navTransform[2, 2], _view.navTransform[2, 3], _view.navTransform[3, 0], _view.navTransform[3, 1], _view.navTransform[3, 2], _view.navTransform[3, 3]);
-
-        //        return true;
-        //    }
-        //}
-
-        //public class VideoRendererWithGesture : SurfaceViewRenderer//, View.IOnTouchListener
-        //{
-        //    float navHeading = 0;
-        //    float navPitch = 0;
-        //    public float[] navLocation = new float[] { 0, 0, 0 };
-        //    bool isFingerDown = false;
-        //    float fingerDownX;
-        //    float fingerDownY;
-        //    float downPitch = 0;
-        //    float downHeading = 0;
-        //    public float[] downLocation = new float[] { 0, 0, 0 };
-        //    public float[,] navTransform;
-
-        //    IOnMotionEventListener mListener;
-
-        //    ScaleGestureDetector _scaleDetector;
-
-        //    public VideoRendererWithGesture(Context context) : base(context)
-        //    {
-        //    }
-
-        //    public VideoRendererWithGesture(Context context, IAttributeSet attrs) : base(context, attrs)
-        //    {
-        //    }
-
-        //    public void SetEventListener(IOnMotionEventListener eventListener)
-        //    {
-        //        mListener = eventListener;
-        //    }
-
-        //    public void SetScaleGestureDetector(ScaleGestureDetector detector)
-        //    {
-        //        _scaleDetector = detector;
-        //    }
-
-        //    public override bool OnTouchEvent(MotionEvent e)
-        //    {
-        //        _scaleDetector.OnTouchEvent(e);
-        //        if (e.PointerCount == 1)
-        //        {
-        //            switch (e.Action)
-        //            {
-        //                case MotionEventActions.Down:
-        //                    isFingerDown = true;
-        //                    fingerDownX = e.RawX;
-        //                    fingerDownY = e.RawY;
-
-        //                    downPitch = navPitch;
-        //                    downHeading = navHeading;
-        //                    downLocation[0] = navLocation[0];
-        //                    downLocation[1] = navLocation[1];
-        //                    downLocation[2] = navLocation[2];
-
-        //                    break;
-        //                case MotionEventActions.Move:
-        //                    var dx = e.RawX - fingerDownX;
-        //                    var dy = e.RawY - fingerDownY;
-
-        //                    var dpitch = (float)0.005 * dy;
-        //                    var dheading = (float)0.005 * dx;
-
-        //                    navHeading = downHeading - dheading;
-        //                    navPitch = downPitch + dpitch;
-        //                    var localTransform = MatMultiply(MatRotateY(navHeading), MatRotateZ(navPitch));
-        //                    navTransform = MatMultiply(MatTranslate(navLocation), localTransform);
-
-        //                    ToBuffer();
-        //                    //_gestureOutput.Text = String.Format("{0} {1} {2} {3} \n {4} {5} {6} {7} \n {8} {9} {10} {11} \n {12} {13} {14} {15}", navTransform[0, 0], navTransform[0, 1], navTransform[0, 2], navTransform[0, 3], navTransform[1, 0], navTransform[1, 1], navTransform[1, 2], navTransform[1, 3], navTransform[2, 0], navTransform[2, 1], navTransform[2, 2], navTransform[2, 3], navTransform[3, 0], navTransform[3, 1], navTransform[3, 2], navTransform[3, 3]);
-        //                    break;
-        //                case MotionEventActions.Up:
-        //                    isFingerDown = false;
-        //                    break;
-        //            }
-        //        }
-        //        return true;
-        //    }
-
-        //    public void ToBuffer()
-        //    {
-        //        if (mListener == null)
-        //        {
-        //            return;
-        //        }
-        //        float[] eye = { navTransform[3, 0], navTransform[3, 1], navTransform[3, 2] };
-        //        float[] lookat = { navTransform[3, 0] + navTransform[0, 0], navTransform[3, 1] + navTransform[0, 1], navTransform[3, 2] + navTransform[0, 2] };
-        //        float[] up = { navTransform[1, 0], navTransform[1, 1], navTransform[1, 2] };
-
-        //        string data = eye[0] + ", " + eye[1] + ", " + eye[2] + ", " +
-        //                    lookat[0] + ", " + lookat[1] + ", " + lookat[2] + ", " +
-        //                    up[0] + ", " + up[1] + ", " + up[2];
-
-        //        var content = new JObject();
-        //        content.Add("type", "camera-transform-lookat");
-        //        content.Add("body", data);
-        //        //var content = new StringContent(data, Encoding.UTF8, "camera-transform-lookat");
-        //        Console.WriteLine(content.ToString(Newtonsoft.Json.Formatting.None));
-        //        ByteBuffer byteBuffer = ByteBuffer.Wrap(Encoding.ASCII.GetBytes(content.ToString()));
-        //        DataChannel.Buffer buffer = new DataChannel.Buffer(byteBuffer, false);
-        //        mListener.SendTransofrm(buffer);
-
-        //    }
-
-        //    public interface IOnMotionEventListener
-        //    {
-        //        void SendTransofrm(DataChannel.Buffer server);
-        //    }
-        //}
 
         private class MotionEventListener : VideoRendererWithControls.IOnMotionEventListener
         {
@@ -614,7 +495,6 @@ namespace Xamarin_Android.Droid
 
             public void OnAddStream(MediaStream stream)
             {
-                Console.Write("In OnAddSTream");
                 if (peerConnection == null)
                 {
                     return;
@@ -626,7 +506,6 @@ namespace Xamarin_Android.Droid
                 if (stream.VideoTracks.Size() == 1)
                 {
                     remoteVideoTrack = (VideoTrack)stream.VideoTracks.Get(0);
-                    // TO DO: MAKE A RUNNABLE
                     remoteVideoTrack.SetEnabled(true);
                     remoteVideoTrack.AddRenderer(new VideoRenderer(remoteVideoRenderer));
                 }
@@ -713,7 +592,6 @@ namespace Xamarin_Android.Droid
                 ByteBuffer data = buffer.Data;
                 byte[] bytes = new byte[data.Capacity()];
                 data.Get(bytes);
-                //string strData = new string(bytes);
             }
 
             public void OnStateChange()
@@ -740,43 +618,25 @@ namespace Xamarin_Android.Droid
             {
                 /* This can be called on CreateAnswer Success or CreateOffer Success. */
 
+                if (localSdp != null)
+                {
+                    Console.Write("we already have an sdp. error");
+                    return;
+                }
                 string description = origSdp.Description;
-
                 SessionDescription sd;
+                description.Replace("96 97 98 99", "100 96 98 102");
+
+                SessionDescription.Type type = (isInitiator) ? SessionDescription.Type.Offer : SessionDescription.Type.Answer;
+
+                sd = new SessionDescription(type, description);
+                localSdp = origSdp;
+
                 if (peerConnection != null)
                 {
-                    //We created the offer
-                    if (isInitiator)
-                    {
-                        // we want to use H264
-                        description.Replace("96 97 98 99", "100 96 98 102");
-
-                        sd = new SessionDescription(SessionDescription.Type.Offer, description);
-                        descriptionData = new Dictionary<string, string>
-                        {
-                            { "type", "offer" },
-                            { "sdp", sd.Description.ToString() }
-                        };
-
-                        isInitiator = false;
-                    }
-                    // Creating an answer
-                    else
-                    {
-                        sd = new SessionDescription(SessionDescription.Type.Answer, description);
-                        Console.Write("creating answer");
-                        
-                        descriptionData = new Dictionary<string, string>
-                        {
-                            { "type", "answer" },
-                            { "sdp", sd.Description.ToString() }
-                        };
-
-                    }
-
-                    isLocal = true;
-                    peerConnection.SetLocalDescription(sdpObserver, sd); 
+                    peerConnection.SetLocalDescription(sdpObserver, sd);
                 }
+
             }
 
             public void OnSetFailure(string p0)
@@ -786,16 +646,45 @@ namespace Xamarin_Android.Droid
 
             public async void OnSetSuccess()
             {
-                if (isLocal)
+                if (peerConnection == null || localSdp == null)
                 {
-                    await SendToPeer(peerId, descriptionData);
-                    isLocal = false;
+                    return;
                 }
-                if (isRemote)
+                if (isInitiator)
                 {
-                    isRemote = false;
-                    // we just set a remote description
-                    Console.WriteLine("Successfully set the remote description");
+                    if (peerConnection.RemoteDescription == null)
+                    {
+                        // Just set our localSDP, sending off our offer. 
+                        descriptionData = new Dictionary<string, string>
+                        {
+                            { "type", "offer" },
+                            { "sdp", localSdp.Description}
+                        };
+                        await SendToPeer(peerId, descriptionData);
+                    }
+
+                    else
+                    {
+                        Console.Write("onRemoteSDPSuccess");
+                    }
+                }
+
+                else
+                {
+                    if (peerConnection.LocalDescription != null)
+                    {
+                        // we just set our local SDP after creating our answer, send it
+                        descriptionData = new Dictionary<string, string>
+                        {
+                            { "type", "answer" },
+                            { "sdp", localSdp.Description}
+                        };
+                        await SendToPeer(peerId, descriptionData);
+                    }
+                    else
+                    {
+                        Console.Write("onRemoteSDPSuccess");
+                    }
                 }
             }
         }

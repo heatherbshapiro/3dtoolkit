@@ -20,25 +20,19 @@ namespace Xamarin_Android.Droid
 			base.OnCreate (bundle);
             RequestedOrientation = Android.Content.PM.ScreenOrientation.Landscape;
 
-            // Set our view from the "main" layout resource
             SetContentView (Resource.Layout.Main);
 
-			// Get our button from the layout resource,
-			// and attach an event to it
-			Button button = FindViewById<Button> (Resource.Id.myButton);
+			Button connectButton = FindViewById<Button> (Resource.Id.myButton);
 
-            EditText text = FindViewById<EditText>(Resource.Id.URLText);
+            EditText urlText = FindViewById<EditText>(Resource.Id.URLText);
             EditText nameText = FindViewById<EditText>(Resource.Id.NameText);
 
-            button.Click += delegate {
+            connectButton.Click += delegate {
                 Connect connect = new Connect();
                 string content = connect.GetServerList(nameText.Text);
-                int myId = Int32.Parse(content.ToString().Split(',')[1]);
-
                 Intent intent = new Intent(this, typeof(VideoStream));
-                intent.PutExtra("serverUrl", text.Text);
-                intent.PutExtra("server_list", content);
-                intent.PutExtra("myId", myId.ToString());
+                intent.PutExtra("serverUrl", urlText.Text);
+                intent.PutExtra("serverList", content);
                 StartActivity(intent);
             };
     
